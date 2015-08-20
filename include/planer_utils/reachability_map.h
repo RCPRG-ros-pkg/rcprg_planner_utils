@@ -50,6 +50,8 @@ public:
     void clear();
     double getValue(const Eigen::VectorXd &x) const;
     void setValue(const Eigen::VectorXd &x, int value);
+
+    void getNeighbourIndices(const std::vector<int> &d, std::list<int> &n_indices);
     void grow();
 
     void addMap(const ReachabilityMap &map);

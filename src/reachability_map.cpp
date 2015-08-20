@@ -190,6 +190,45 @@
         max_value_ = 0;
     }
 
+    void ReachabilityMap::getNeighbourIndices(const std::vector<int> &d, std::list<int> &n_indices) {
+        n_indices.clear();
+        for (int dim_idx = 0; dim_idx < dim_; dim_idx++) {
+            if (d[dim_idx] > 0) {
+                int total_idx = 0;
+                for (int dim_idx2 = 0; dim_idx2 < dim_; dim_idx2++) {
+                    if (dim_idx == dim_idx2) {
+                        total_idx = total_idx * steps_[dim_idx2] + d[dim_idx2] - 1;
+                    }
+                    else {
+                        total_idx = total_idx * steps_[dim_idx2] + d[dim_idx2];
+                    }
+                }
+                n_indices.push_back(total_idx);
+            }
+            if (d[dim_idx] < steps_[dim_idx]-1) {
+                int total_idx = 0;
+                for (int dim_idx2 = 0; dim_idx2 < dim_; dim_idx2++) {
+                    if (dim_idx == dim_idx2) {
+                        total_idx = total_idx * steps_[dim_idx2] + d[dim_idx2] + 1;
+                    }
+                    else {
+                        total_idx = total_idx * steps_[dim_idx2] + d[dim_idx2];
+                    }
+                }
+                n_indices.push_back(total_idx);
+            }
+            
+        }
+
+/*        if (d0 > 0) {
+            n_indices.push_back(((d0-1) * steps_[1] + d1) * steps_[2] + d2);
+        }
+        if (d0 < steps_[0]-1) {
+            n_indices.push_back(((d0+1) * steps_[1] + d1) * steps_[2] + d2);
+        }
+*/
+    }
+
     void ReachabilityMap::grow() {
         std::vector<int > map_copy(r_map_);
         for (int idx = 0; idx < map_copy.size(); idx++) {
@@ -197,7 +236,54 @@
                 map_copy[idx] = 1;
             }
         }
-    
+
+        std::vector<int > d(dim_);
+
+        if (dim_ == 2) {
+            for (int d0=0; d0<steps_[0]; d0++) {
+                for (int d1=0; d1<steps_[1]; d1++) {
+                    int idx = d0 * steps_[1] + d1;
+
+                    if (map_copy[idx] == 1) {
+                        d[0] = d0;
+                        d[1] = d1;
+                        std::list<int > n_indices;
+                        getNeighbourIndices(d, n_indices);
+                        for (std::list<int >::const_iterator it = n_indices.begin(); it != n_indices.end(); it++) {
+                            if (map_copy[(*it)] == 0) {
+                                map_copy[(*it)] = 2;
+                            }
+                        }
+                    }
+/*
+                    if (map_copy[idx] == 1) {
+                        if (d0 > 0 && map_copy[(d0-1) * steps_[1] + d1] == 0) {
+                            map_copy[(d0-1) * steps_[1] + d1] = 2;
+                        }
+                        if (d0 < steps_[0]-1 && map_copy[(d0+1) * steps_[1] + d1] == 0) {
+                            map_copy[(d0+1) * steps_[1] + d1] = 2;
+                        }
+                        if (d1 > 0 && map_copy[d0 * steps_[1] + d1 - 1] == 0) {
+                            map_copy[d0 * steps_[1] + d1 - 1] = 2;
+                        }
+                        if (d1 < steps_[1]-1 && map_copy[d0 * steps_[1] + d1 + 1] == 0) {
+                            map_copy[d0 * steps_[1] + d1 + 1] = 2;
+                        }
+                    }*/
+                }
+            }
+            for (int idx = 0; idx < map_copy.size(); idx++) {
+                if (map_copy[idx] > 1) {
+                    map_copy[idx] = 1;
+                }
+                r_map_[idx] += map_copy[idx];
+                if (r_map_[idx] > max_value_) {
+                    max_value_ = r_map_[idx];
+                }
+            }
+        }
+
+/*
         if (dim_ == 2) {
             for (int d0=0; d0<steps_[0]; d0++) {
                 for (int d1=0; d1<steps_[1]; d1++) {
@@ -229,8 +315,45 @@
                 }
             }
         }
+        else if (dim_ == 3) {
+            for (int d0=0; d0<steps_[0]; d0++) {
+                for (int d1=0; d1<steps_[1]; d1++) {
+                    for (int d2=0; d2<steps_[2]; d2++) {
+                        int idx = (d0 * steps_[1] + d1) * steps_[2] + d2;
+                        if (map_copy[idx] == 1) {
+                            int idx2 = ((d0-1) * steps_[1] + d1) * steps_[2] + d2;
+                            if (d0 > 0 && map_copy[idx2] == 0) {
+                                map_copy[idx2] = 2;
+                            }
+                            idx2 = ((d0+1) * steps_[1] + d1) * steps_[2] + d2;
+                            if (d0 < steps_[0]-1 && map_copy[idx2] == 0) {
+                                map_copy[idx2] = 2;
+                            }
+                            idx2 = (d0 * steps_[1] + d1 - 1) * steps_[2] + d2;
+                            if (d1 > 0 && map_copy[idx2] == 0) {
+                                map_copy[idx2] = 2;
+                            }
+                            idx2 = (d0 * steps_[1] + d1 + 1) * steps_[2] + d2;
+                            if (d1 < steps_[1]-1 && map_copy[d0 * steps_[1] + d1 + 1] == 0) {
+                                map_copy[d0 * steps_[1] + d1 + 1] = 2;
+                            }
+                        }
+                    }
+                }
+            }
+            for (int idx = 0; idx < map_copy.size(); idx++) {
+                if (map_copy[idx] > 1) {
+                    map_copy[idx] = 1;
+                }
+                r_map_[idx] += map_copy[idx];
+                if (r_map_[idx] > max_value_) {
+                    max_value_ = r_map_[idx];
+                }
+            }
+        }
+*/
         else {
-            std::cout << "ReachabilityMap::grow not implemented" << std::endl;
+            std::cout << "ReachabilityMap::grow not implemented for " << dim_ << " dimensions" << std::endl;
         }
     }
 
