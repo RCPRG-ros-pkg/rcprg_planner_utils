@@ -29,12 +29,9 @@
 // Author: Dawid Seredynski
 //
 
-#ifndef UTILITIES_H__
-#define UTILITIES_H__
+#ifndef SIMULATOR_H__
+#define SIMULATOR_H__
 
-#include <ros/ros.h>
-#include <sensor_msgs/JointState.h>
-#include <tf/transform_broadcaster.h>
 #include <boost/bind.hpp>
 
 #include <string>
@@ -43,15 +40,47 @@
 
 #include "Eigen/Dense"
 
+#include "dyn_model/dyn_model.h"
 #include <collision_convex_model/collision_convex_model.h>
-#include "marker_publisher.h"
+#include "kin_model/kin_model.h"
+#include "planer_utils/task_col.h"
+#include "planer_utils/task_hand.h"
+#include "planer_utils/task_jlc.h"
 
-void publishJointState(ros::Publisher &joint_state_pub, const Eigen::VectorXd &q, const std::vector<std::string > &joint_names);
-void publishJointState(ros::Publisher &joint_state_pub, const Eigen::VectorXd &q, const std::vector<std::string > &joint_names, const Eigen::VectorXd &ign_q, const std::vector<std::string > &ign_joint_names);
-void publishTransform(tf::TransformBroadcaster &br, const KDL::Frame &T_B_F, const std::string &frame_id, const std::string &base_frame_id);
-int addRobotModelVis(MarkerPublisher &markers_pub, int m_id, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::vector<KDL::Frame > &T);
-void getPointOnPath(const std::list<Eigen::VectorXd > &path, double f, Eigen::VectorXd &x);
-double getPathLength(const std::list<Eigen::VectorXd > &path);
+class DynamicsSimulatorHandPose {
+private:
+    DynamicsSimulatorHandPose(const DynamicsSimulatorHandPose&);
+    DynamicsSimulatorHandPose &operator=(const DynamicsSimulatorHandPose&);
 
-#endif  // UTILITIES_H__
+protected:
+    int ndof_;
+    int ndim_;
+    int effector_idx_;
+    Eigen::VectorXd q_, dq_, ddq_, torque_;
+    const boost::shared_ptr<self_collision::CollisionModel> &col_model_;
+    const boost::shared_ptr<KinematicModel> &kin_model_;
+    const boost::shared_ptr<DynamicModel > &dyn_model_;
+    double activation_dist_;
+    boost::shared_ptr<Task_JLC> task_JLC_;
+    boost::shared_ptr<Task_COL> task_COL_;
+    boost::shared_ptr<Task_HAND> task_HAND_;
+    std::vector<KDL::Frame > links_fk_;
+    KDL::Frame r_HAND_target_;
+    KinematicModel::Jacobian J_r_HAND_6_, J_r_HAND_;
+    std::string effector_name_;
+public:
+
+    DynamicsSimulatorHandPose(int ndof, int ndim, const std::string &effector_name, const boost::shared_ptr<self_collision::CollisionModel> &col_model,
+                        const boost::shared_ptr<KinematicModel> &kin_model,
+                        const boost::shared_ptr<DynamicModel > &dyn_model,
+                        const std::vector<std::string > &joint_names);
+
+    void setState(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::VectorXd &ddq);
+    void getState(Eigen::VectorXd &q, Eigen::VectorXd &dq, Eigen::VectorXd &ddq);
+    void setTarget(const KDL::Frame &r_HAND_target);
+    void oneStep(const KDL::Twist &diff);
+    void oneStep();
+};
+
+#endif  // SIMULATOR_H__
 

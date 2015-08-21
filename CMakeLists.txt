@@ -15,7 +15,7 @@ include_directories(${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${USE_OROCOS_IN
 
 include_directories(include)
 
-add_library(planer_utils src/marker_publisher.cpp src/random_uniform.cpp src/reachability_map.cpp src/task_col.cpp src/task_hand.cpp src/task_jlc.cpp src/utilities.cpp)
+add_library(planer_utils src/marker_publisher.cpp src/random_uniform.cpp src/reachability_map.cpp src/task_col.cpp src/task_hand.cpp src/task_jlc.cpp src/utilities.cpp src/rrt_star.cpp src/simulator.cpp)
 
 target_link_libraries(planer_utils ${catkin_LIBRARIES} ${USE_OROCOS_LIBRARIES} ${orocos_kdl_LIBRARIES})
 add_dependencies(planer_utils ${PROJECT_NAME}_gencpp)

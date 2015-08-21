@@ -42,14 +42,31 @@
         joint_state_pub.publish(js);
     }
 
-    void publishTransform(tf::TransformBroadcaster &br, const KDL::Frame &T_B_F, const std::string &frame_id) {
+    void publishJointState(ros::Publisher &joint_state_pub, const Eigen::VectorXd &q, const std::vector<std::string > &joint_names, const Eigen::VectorXd &ign_q, const std::vector<std::string > &ign_joint_names) {
+        sensor_msgs::JointState js;
+        js.header.stamp = ros::Time::now();
+        int q_idx = 0;
+        for (std::vector<std::string >::const_iterator it = joint_names.begin(); it != joint_names.end(); it++, q_idx++) {
+            js.name.push_back(*it);
+            js.position.push_back(q[q_idx]);
+        }
+        q_idx = 0;
+        for (std::vector<std::string >::const_iterator it = ign_joint_names.begin(); it != ign_joint_names.end(); it++, q_idx++) {
+            js.name.push_back(*it);
+            js.position.push_back(ign_q[q_idx]);
+        }
+        joint_state_pub.publish(js);
+    }
+
+
+    void publishTransform(tf::TransformBroadcaster &br, const KDL::Frame &T_B_F, const std::string &frame_id, const std::string &base_frame_id) {
         tf::Transform transform;
         transform.setOrigin( tf::Vector3(T_B_F.p.x(), T_B_F.p.y(), T_B_F.p.z()) );
         tf::Quaternion q;
         double qx, qy, qz, qw;
         T_B_F.M.GetQuaternion(q[0], q[1], q[2], q[3]);
         transform.setRotation(q);
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base", frame_id));
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), base_frame_id, frame_id));
     }
 
     int addRobotModelVis(MarkerPublisher &markers_pub, int m_id, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::vector<KDL::Frame > &T) {
