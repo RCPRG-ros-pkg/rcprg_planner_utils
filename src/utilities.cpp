@@ -111,3 +111,18 @@
         x = (*(--path.end()));
     }
 
+    double getPathLength(const std::list<Eigen::VectorXd > &path) {
+
+        if (path.size() < 2) {
+            return 0.0;
+        }
+
+        double length = 0.0;
+        for (std::list<Eigen::VectorXd >::const_iterator it1 = path.begin(), it2=++path.begin(); it2 != path.end(); it1++, it2++) {
+            double dist = ((*it1) - (*it2)).norm();
+            length += dist;
+        }
+
+        return length;
+    }
+
