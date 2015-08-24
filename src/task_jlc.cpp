@@ -83,7 +83,7 @@
 //                    activation_JLC_[q_idx] = 0.0;
 //                }
 
-                if (fabs(torque(q_idx)) > 0.001) {
+                if (fabs(torque(q_idx)) > 0.000001) {
                     k_(q_idx) = max_trq_[q_idx]/limit_range_[q_idx];
                 } else {
                     k_(q_idx) = 0.001;
@@ -104,5 +104,6 @@
             // calculate jacobian (the activation function)
             J_JLC_ = activation_JLC_.asDiagonal();
             N = Eigen::MatrixXd::Identity(q_length_, q_length_) - (J_JLC_.transpose() * J_JLC_);
+
     }
 

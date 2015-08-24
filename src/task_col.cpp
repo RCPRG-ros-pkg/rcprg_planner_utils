@@ -127,11 +127,11 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                     activation = 0.0;
                 }
 
-                Eigen::JacobiSVD<Eigen::MatrixXd> svd(Jcol, Eigen::ComputeFullV);
+//                Eigen::JacobiSVD<Eigen::MatrixXd> svd(Jcol, Eigen::ComputeFullV);
 
-                Eigen::MatrixXd activation_matrix = Eigen::MatrixXd::Zero(ndof_, ndof_);
-                activation_matrix(0,0) = activation;
-                activation_matrix(1,1) = activation;
+//                Eigen::MatrixXd activation_matrix = Eigen::MatrixXd::Zero(ndof_, ndof_);
+//                activation_matrix(0,0) = activation;
+//                activation_matrix(1,1) = activation;
 
                 Eigen::MatrixXd Ncol12(ndof_, ndof_);
                 Ncol12 = Eigen::MatrixXd::Identity(ndof_, ndof_) - (Jcol.transpose() * activation * Jcol);

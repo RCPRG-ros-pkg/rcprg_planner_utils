@@ -97,7 +97,6 @@
             tmpKK2_.noalias() = Dc *  tmpKK_;
             Dc.noalias() = tmpKK2_ * Q;
             tmpK_.noalias() = J * dq;
-            // TODO: check if 2.0* is ok
             wrench_tmp.noalias() = Dc * tmpK_;
             torque.noalias() -= JT * wrench_tmp;
 
