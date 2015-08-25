@@ -39,13 +39,11 @@
 
 class Task_WCC {
 public:
-    Task_WCC(int ndof, int q5_idx, int q6_idx);
+    Task_WCC(int ndof, int q5_idx, int q6_idx, bool inverted=false);
 
     ~Task_WCC();
 
-    void distanceLinePoint(const KDL::Vector &lineA, const KDL::Vector &lineB, const KDL::Vector &pt, double &distance, KDL::Vector &p_pt1, KDL::Vector &p_pt2);
-
-    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher &markers_pub);
+    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub=NULL);
 
 protected:
     int ndof_;

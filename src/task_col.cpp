@@ -45,7 +45,10 @@ Task_COL::Task_COL(int ndof, double activation_dist, double Fmax, const boost::s
     Task_COL::~Task_COL() {
     }
 
-void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, const std::vector<KDL::Frame > &links_fk, const std::vector<self_collision::CollisionInfo> &link_collisions, Eigen::VectorXd &torque_COL, Eigen::MatrixXd &N_COL) {
+void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, const std::vector<KDL::Frame > &links_fk,
+                        const std::vector<self_collision::CollisionInfo> &link_collisions, Eigen::VectorXd &torque_COL, Eigen::MatrixXd &N_COL) {
+            torque_COL.setZero();
+            N_COL.setIdentity();
             for (std::vector<self_collision::CollisionInfo>::const_iterator it = link_collisions.begin(); it != link_collisions.end(); it++) {
                 const KDL::Frame &T_B_L1 = links_fk[it->link1_idx];
                 const std::string &link1_name = link_names_vec_[it->link1_idx];

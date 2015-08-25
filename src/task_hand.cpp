@@ -109,7 +109,7 @@
     tmpKN_.noalias() = Mi * JT;
     Ji_.noalias() = tmpKN_ * tmpKK_;
 
-    N.noalias() = Eigen::MatrixXd::Identity(N.rows(), N.cols());
+    N.setIdentity();
     N.noalias() -=  JT * A * J * Mi;
 
 //            N = Eigen::MatrixXd::Identity(ndof_, ndof_) - (JT * J);

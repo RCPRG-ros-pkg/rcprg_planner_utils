@@ -46,6 +46,7 @@
 #include "planer_utils/task_col.h"
 #include "planer_utils/task_hand.h"
 #include "planer_utils/task_jlc.h"
+#include "planer_utils/task_wcc.h"
 
 class DynamicsSimulatorHandPose {
 private:
@@ -64,6 +65,24 @@ protected:
     boost::shared_ptr<Task_JLC> task_JLC_;
     boost::shared_ptr<Task_COL> task_COL_;
     boost::shared_ptr<Task_HAND> task_HAND_;
+    boost::shared_ptr<Task_WCC> task_WCCr_;
+    boost::shared_ptr<Task_WCC> task_WCCl_;
+
+    Eigen::VectorXd torque_JLC_;
+    Eigen::MatrixXd N_JLC_;
+    Eigen::VectorXd torque_WCCr_;
+    Eigen::MatrixXd N_WCCr_;
+    Eigen::VectorXd torque_WCCl_;
+    Eigen::MatrixXd N_WCCl_;
+    Eigen::VectorXd torque_COL_;
+    Eigen::MatrixXd N_COL_;
+    Eigen::VectorXd torque_HAND_;
+    Eigen::MatrixXd N_HAND_;
+
+    Eigen::VectorXd Kc_;
+    Eigen::VectorXd Dxi_;
+    Eigen::VectorXd r_HAND_diff_;
+
     std::vector<KDL::Frame > links_fk_;
     KDL::Frame r_HAND_target_;
     KinematicModel::Jacobian J_r_HAND_6_, J_r_HAND_;

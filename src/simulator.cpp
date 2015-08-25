@@ -46,7 +46,20 @@
         kin_model_(kin_model),
         dyn_model_(dyn_model),
         links_fk_(col_model->getLinksCount()),
-        activation_dist_(0.05)
+        activation_dist_(0.05),
+        torque_JLC_( Eigen::VectorXd::Zero(ndof_) ),
+        N_JLC_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
+        torque_WCCr_( Eigen::VectorXd::Zero(ndof_) ),
+        N_WCCr_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
+        torque_WCCl_( Eigen::VectorXd::Zero(ndof_) ),
+        N_WCCl_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
+        torque_COL_( Eigen::VectorXd::Zero(ndof_) ),
+        N_COL_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
+        torque_HAND_( Eigen::VectorXd::Zero(ndof_) ),
+        N_HAND_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
+        Kc_(ndim_),
+        Dxi_(ndim_),
+        r_HAND_diff_(ndim_)
     {
         for (int q_idx = 0; q_idx < ndof; q_idx++) {
             q_[q_idx] = 0.0;
@@ -55,12 +68,46 @@
             torque_[q_idx] = 0.0;
         }
 
+        double Kc_lin = 20.0;
+        double Kc_rot = 2.0;
+        if (ndim_ == 3) {
+            Kc_[0] = Kc_lin;
+            Kc_[1] = Kc_lin;
+            Kc_[2] = Kc_rot;
+        }
+        else {
+            for (int dim_idx = 0; dim_idx < 3; dim_idx++) {
+                Kc_[dim_idx] = Kc_lin;
+                Kc_[dim_idx+3] = Kc_rot;
+            }
+        }
+
+        for (int dim_idx = 0; dim_idx < ndim_; dim_idx++) {
+            Dxi_[dim_idx] = 0.7;
+        }
+
         effector_idx_ = col_model->getLinkIndex(effector_name_);
+
+        int wcc_r_q5_idx=-1, wcc_r_q6_idx=-1;
+        int wcc_l_q5_idx=-1, wcc_l_q6_idx=-1;
 
         // joint limits
         Eigen::VectorXd lower_limit(ndof), upper_limit(ndof), limit_range(ndof), max_trq(ndof);
         int q_idx = 0;
         for (std::vector<std::string >::const_iterator name_it = joint_names.begin(); name_it != joint_names.end(); name_it++, q_idx++) {
+
+            if ( (*name_it) == "right_arm_5_joint" ) {
+                wcc_r_q5_idx = q_idx;
+            }
+            else if ( (*name_it) == "right_arm_6_joint" ) {
+                wcc_r_q6_idx = q_idx;
+            }
+            else if ( (*name_it) == "left_arm_5_joint" ) {
+                wcc_l_q5_idx = q_idx;
+            }
+            else if ( (*name_it) == "left_arm_6_joint" ) {
+                wcc_l_q6_idx = q_idx;
+            }
 
             if (!col_model->getJointLimits( (*name_it), lower_limit[q_idx], upper_limit[q_idx] )) {
                 std::cout << "ERROR: could not find joint with name " << (*name_it) << std::endl;
@@ -74,7 +121,21 @@
             std::cout << "ERROR: DynamicsSimulatorHandPose works for 3 or 6 dimensions" << std::endl;
         }
 
-        task_JLC_.reset( new Task_JLC(lower_limit, upper_limit, limit_range, max_trq) );
+        std::cout << wcc_r_q5_idx << " " << wcc_r_q6_idx << " " << wcc_l_q5_idx << " " << wcc_l_q6_idx << std::endl;
+        std::set<int > jlc_excluded_q_idx;
+        if (wcc_r_q5_idx != -1 && wcc_r_q6_idx != -1) {
+            jlc_excluded_q_idx.insert(wcc_r_q5_idx);
+            jlc_excluded_q_idx.insert(wcc_r_q6_idx);
+            task_WCCr_.reset( new Task_WCC(ndof, wcc_r_q5_idx, wcc_r_q6_idx, false) );
+        }
+        if (wcc_l_q5_idx != -1 && wcc_l_q6_idx != -1) {
+            jlc_excluded_q_idx.insert(wcc_l_q5_idx);
+            jlc_excluded_q_idx.insert(wcc_l_q6_idx);
+            task_WCCl_.reset( new Task_WCC(ndof, wcc_l_q5_idx, wcc_l_q6_idx, true) );
+        }
+        task_JLC_.reset( new Task_JLC(lower_limit, upper_limit, limit_range, max_trq, jlc_excluded_q_idx) );
+
+
         task_COL_.reset( new Task_COL(ndof_, activation_dist_, 10.0, kin_model_, col_model_) );
         task_HAND_.reset( new Task_HAND(ndof_, ndim_) );
 
@@ -109,61 +170,38 @@
                 //
                 // joint limit avoidance
                 //
-                Eigen::VectorXd torque_JLC(ndof_);
-                Eigen::MatrixXd N_JLC(ndof_, ndof_);
-                task_JLC_->compute(q_, dq_, dyn_model_->getM(), torque_JLC, N_JLC);
+                task_JLC_->compute(q_, dq_, dyn_model_->getM(), torque_JLC_, N_JLC_);
+
+                //
+                // wrist collision constraint
+                //
+                if (task_WCCr_ != NULL) {
+                    task_WCCr_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCr_, N_WCCr_);
+                }
+
+                if (task_WCCl_ != NULL) {
+                    task_WCCl_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCl_, N_WCCl_);
+                }
 
                 //
                 // collision constraints
                 //
                 std::vector<self_collision::CollisionInfo> link_collisions;
                 self_collision::getCollisionPairs(col_model_, links_fk_, activation_dist_, link_collisions);
-
-                Eigen::VectorXd torque_COL(ndof_);
-                for (int q_idx = 0; q_idx < ndof_; q_idx++) {
-                    torque_COL[q_idx] = 0.0;
-                }
-                Eigen::MatrixXd N_COL(Eigen::MatrixXd::Identity(ndof_, ndof_));
-
-                task_COL_->compute(q_, dq_, dyn_model_->getInvM(), links_fk_, link_collisions, torque_COL, N_COL);
+                task_COL_->compute(q_, dq_, dyn_model_->getInvM(), links_fk_, link_collisions, torque_COL_, N_COL_);
 
                 //
                 // effector task
                 //
-
-                Eigen::VectorXd torque_HAND(ndof_);
-                Eigen::MatrixXd N_HAND(ndof_, ndof_);
-
-                Eigen::VectorXd r_HAND_diff(ndim_);
                 if (ndim_ == 3) {
-                    r_HAND_diff[0] = diff[0];
-                    r_HAND_diff[1] = diff[1];
-                    r_HAND_diff[2] = diff[5];
+                    r_HAND_diff_[0] = diff[0];
+                    r_HAND_diff_[1] = diff[1];
+                    r_HAND_diff_[2] = diff[5];
                 }
                 else {
                     for (int dim_idx = 0; dim_idx < 6; dim_idx++) {
-                        r_HAND_diff[dim_idx] = diff[dim_idx];
+                        r_HAND_diff_[dim_idx] = diff[dim_idx];
                     }
-                }
-
-                double Kc_lin = 20.0;
-                double Kc_rot = 2.0;
-                Eigen::VectorXd Kc(ndim_);
-                if (ndim_ == 3) {
-                    Kc[0] = Kc_lin;
-                    Kc[1] = Kc_lin;
-                    Kc[2] = Kc_rot;
-                }
-                else {
-                    for (int dim_idx = 0; dim_idx < 3; dim_idx++) {
-                        Kc[dim_idx] = Kc_lin;
-                        Kc[dim_idx+3] = Kc_rot;
-                    }
-                }
-
-                Eigen::VectorXd Dxi(ndim_);
-                for (int dim_idx = 0; dim_idx < ndim_; dim_idx++) {
-                    Dxi[dim_idx] = 0.7;
                 }
 
                 kin_model_->getJacobian(J_r_HAND_6_, effector_name_, q_);
@@ -174,13 +212,14 @@
                         J_r_HAND_(1, q_idx) = J_r_HAND_6_(1, q_idx);
                         J_r_HAND_(2, q_idx) = J_r_HAND_6_(5, q_idx);
                     }
-                    task_HAND_->compute(r_HAND_diff, Kc, Dxi, J_r_HAND_, dq_, dyn_model_->getInvM(), torque_HAND, N_HAND);
+                    task_HAND_->compute(r_HAND_diff_, Kc_, Dxi_, J_r_HAND_, dq_, dyn_model_->getInvM(), torque_HAND_, N_HAND_);
                 }
                 else {
-                    task_HAND_->compute(r_HAND_diff, Kc, Dxi, J_r_HAND_6_, dq_, dyn_model_->getInvM(), torque_HAND, N_HAND);
+                    task_HAND_->compute(r_HAND_diff_, Kc_, Dxi_, J_r_HAND_6_, dq_, dyn_model_->getInvM(), torque_HAND_, N_HAND_);
                 }
 
-                torque_ = torque_JLC + N_JLC.transpose() * (torque_COL + (N_COL.transpose() * (torque_HAND)));
+//                torque_ = torque_JLC_ + N_JLC_.transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
+                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
 
 
                 // simulate one step

@@ -31,7 +31,7 @@
 
 #include "planer_utils/task_jlc.h"
 
-    Task_JLC::Task_JLC(const Eigen::VectorXd &lower_limit, const Eigen::VectorXd &upper_limit, const Eigen::VectorXd &limit_range, const Eigen::VectorXd &max_trq) :
+    Task_JLC::Task_JLC(const Eigen::VectorXd &lower_limit, const Eigen::VectorXd &upper_limit, const Eigen::VectorXd &limit_range, const Eigen::VectorXd &max_trq, const std::set<int > &excluded_q_idx) :
         q_length_(lower_limit.innerSize()),
         lower_limit_(lower_limit),
         upper_limit_(upper_limit),
@@ -42,7 +42,8 @@
         k0_(q_length_),
         q_(q_length_, q_length_), d_(q_length_, q_length_),
         J_JLC_(q_length_, q_length_),
-        tmpNN_(q_length_, q_length_)
+        tmpNN_(q_length_, q_length_),
+        excluded_q_idx_(excluded_q_idx)
     {
     }
 
@@ -72,21 +73,29 @@
     void Task_JLC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, Eigen::VectorXd &torque, Eigen::MatrixXd &N) {
             // code from joint_limit_avoidance.cpp
             for (int q_idx = 0; q_idx < q_length_; q_idx++) {
-                torque(q_idx) = jointLimitTrq(upper_limit_[q_idx],
-                                           lower_limit_[q_idx], limit_range_[q_idx], max_trq_[q_idx],
-                                           q[q_idx], activation_JLC_[q_idx]);
-                activation_JLC_[q_idx] *= 10.0;
-                if (activation_JLC_[q_idx] > 1.0) {
-                    activation_JLC_[q_idx] = 1.0;
-                }
-//                if ( (torque(q_idx) > 0 && dq(q_idx) > 0) || (torque(q_idx) <= 0 && dq(q_idx) <= 0)) {
-//                    activation_JLC_[q_idx] = 0.0;
-//                }
-
-                if (fabs(torque(q_idx)) > 0.000001) {
-                    k_(q_idx) = max_trq_[q_idx]/limit_range_[q_idx];
-                } else {
+                if (excluded_q_idx_.find(q_idx) != excluded_q_idx_.end()) {
+                    torque(q_idx) = 0.0;
+                    activation_JLC_[q_idx] = 0.0;
                     k_(q_idx) = 0.001;
+                }
+                else
+                {
+                    torque(q_idx) = jointLimitTrq(upper_limit_[q_idx],
+                                               lower_limit_[q_idx], limit_range_[q_idx], max_trq_[q_idx],
+                                               q[q_idx], activation_JLC_[q_idx]);
+                    activation_JLC_[q_idx] *= 10.0;
+                    if (activation_JLC_[q_idx] > 1.0) {
+                        activation_JLC_[q_idx] = 1.0;
+                    }
+//                  if ( (torque(q_idx) > 0 && dq(q_idx) > 0) || (torque(q_idx) <= 0 && dq(q_idx) <= 0)) {
+//                      activation_JLC_[q_idx] = 0.0;
+//                  }
+
+                    if (fabs(torque(q_idx)) > 0.000001) {
+                        k_(q_idx) = max_trq_[q_idx]/limit_range_[q_idx];
+                    } else {
+                        k_(q_idx) = 0.001;
+                    }
                 }
             }
 

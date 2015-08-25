@@ -79,11 +79,11 @@
                 }
                 else if ((*it)->geometry->getType() == self_collision::Geometry::SPHERE) {
                     self_collision::Sphere *sphere = static_cast<self_collision::Sphere* >((*it)->geometry.get());
-                    m_id = markers_pub.addSinglePointMarker(m_id, T_B_O.p, 0, 1, 0, 1, sphere->radius*2, "base");
+                    m_id = markers_pub.addSinglePointMarker(m_id, T_B_O.p, 0, 1, 0, 0.5, sphere->getRadius()*2, "world");
                 }
                 else if ((*it)->geometry->getType() == self_collision::Geometry::CAPSULE) {
                     self_collision::Capsule *capsule = static_cast<self_collision::Capsule* >((*it)->geometry.get());
-                    m_id = markers_pub.addCapsule(m_id, T_B_O, capsule->length, capsule->radius, "base");
+                    m_id = markers_pub.addCapsule(m_id, T_B_O, capsule->getLength(), capsule->getRadius(), "world");
                 }
             }
         }

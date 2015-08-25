@@ -52,24 +52,28 @@ const double Task_WCC::polygon_q5q6_[] = {
 -0.423378348351,-2.09483933449,
 };
 
-    Task_WCC::Task_WCC(int ndof, int q5_idx, int q6_idx) :
+    Task_WCC::Task_WCC(int ndof, int q5_idx, int q6_idx, bool inverted) :
         ndof_(ndof),
         q5_idx_(q5_idx),
         q6_idx_(q6_idx),
         d0_(20.0/180.0*3.1415)
     {
         int lines_count = sizeof(polygon_q5q6_)/sizeof(double)/2;
+        double inv = 1.0;
+        if (inverted) {
+            inv = -1.0;
+        }
 
         for (int line_idx = 0; line_idx < lines_count; line_idx++) {
             int idxA = line_idx * 2;
             int idxB = ((line_idx + 1) % lines_count) * 2;
             Line l;
             l.a.resize(2);
-            l.a(0) = polygon_q5q6_[idxA];
-            l.a(1) = polygon_q5q6_[idxA + 1];
+            l.a(0) = inv * polygon_q5q6_[idxA];
+            l.a(1) = inv * polygon_q5q6_[idxA + 1];
             l.b.resize(2);
-            l.b(0) = polygon_q5q6_[idxB];
-            l.b(1) = polygon_q5q6_[idxB + 1];
+            l.b(0) = inv * polygon_q5q6_[idxB];
+            l.b(1) = inv * polygon_q5q6_[idxB + 1];
             l.n.resize(2);
             l.n(0) = l.a(1) - l.b(1);
             l.n(1) = l.b(0) - l.a(0);
@@ -82,7 +86,6 @@ const double Task_WCC::polygon_q5q6_[] = {
         for (int pt_idx = 0; pt_idx < lines_count; pt_idx++) {
             int l1_idx = (pt_idx - 1 + lines_count) % lines_count;
             int l2_idx = pt_idx;
-            std::cout << l1_idx << " " << l2_idx << std::endl;
             if (lines_[l1_idx].n.dot(lines_[l2_idx].b) < lines_[l1_idx].dn) {
                 // convex
                 PointAngle pa;
@@ -123,32 +126,7 @@ const double Task_WCC::polygon_q5q6_[] = {
     Task_WCC::~Task_WCC() {
     }
 
-    void Task_WCC::distanceLinePoint(const KDL::Vector &lineA, const KDL::Vector &lineB, const KDL::Vector &pt, double &distance, KDL::Vector &p_pt1, KDL::Vector &p_pt2) {
-        KDL::Vector v = lineB - lineA;
-        double ta = KDL::dot(v, lineA);
-        double tb = KDL::dot(v, lineB);
-        double tpt = KDL::dot(v, pt);
-        if (tpt <= ta) {
-            distance = (lineA-pt).Norm();
-            p_pt1 = lineA;
-            p_pt2 = pt;
-        }
-        else if (tpt >= tb) {
-            distance = (lineB-pt).Norm();
-            p_pt1 = lineB;
-            p_pt2 = pt;
-        }
-        else {
-            KDL::Vector n(v.y(), -v.x(), v.z());
-            n.Normalize();
-            double diff = KDL::dot(n, lineA) - KDL::dot(n, pt);
-            distance = fabs(diff);
-            p_pt1 = pt + (diff * n);
-            p_pt2 = pt;
-        }
-    }
-
-    void Task_WCC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher &markers_pub) {
+    void Task_WCC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub) {
 
             Eigen::VectorXd p(2);
             p(0) = q(q5_idx_);
@@ -166,8 +144,10 @@ const double Task_WCC::polygon_q5q6_[] = {
                 KDL::Vector lineA(lines_[line_idx].a(0), lines_[line_idx].a(1), 0);
                 KDL::Vector lineB(lines_[line_idx].b(0), lines_[line_idx].b(1), 0);
                 KDL::Vector n(lines_[line_idx].n(0), lines_[line_idx].n(1), 0);
-                m_id = markers_pub.addVectorMarker(m_id, lineA, lineB, 1, 1, 1, 1, 0.02, "world");
-                m_id = markers_pub.addVectorMarker(m_id, (lineA + lineB)/2, (lineA + lineB)/2 + n*0.2, 0, 0, 1, 1, 0.02, "world");
+                if (markers_pub != NULL) {
+                    m_id = markers_pub->addVectorMarker(m_id, lineA, lineB, 1, 1, 1, 1, 0.02, "world");
+                    m_id = markers_pub->addVectorMarker(m_id, (lineA + lineB)/2, (lineA + lineB)/2 + n*0.2, 0, 0, 1, 1, 0.02, "world");
+                }
 
                 if (lines_[line_idx].ab.dot(p) >= lines_[line_idx].da && lines_[line_idx].ab.dot(p) <= lines_[line_idx].db) {
                     double dist = lines_[line_idx].n.dot(p) - lines_[line_idx].dn;
@@ -194,7 +174,9 @@ const double Task_WCC::polygon_q5q6_[] = {
                     }
                 }
                 KDL::Vector pt(convex_points_[pt_idx].p(0), convex_points_[pt_idx].p(1), 0);
-                m_id = markers_pub.addSinglePointMarker(m_id, pt, 0, 1, 0, 1, 0.1, "world");
+                if (markers_pub != NULL) {
+                    m_id = markers_pub->addSinglePointMarker(m_id, pt, 0, 1, 0, 1, 0.1, "world");
+                }
             }
 
             for (int pt_idx = 0; pt_idx < concave_points_.size(); pt_idx++) {
@@ -211,31 +193,46 @@ const double Task_WCC::polygon_q5q6_[] = {
                     }
                 }
                 KDL::Vector pt(concave_points_[pt_idx].p(0), concave_points_[pt_idx].p(1), 0);
-                m_id = markers_pub.addSinglePointMarker(m_id, pt, 1, 0, 0, 1, 0.1, "world");
+                if (markers_pub != NULL) {
+                    m_id = markers_pub->addSinglePointMarker(m_id, pt, 1, 0, 0, 1, 0.1, "world");
+                }
             }
 
             if (found) {
-                std::cout << p(0) << " " << p(1) << " min_dist: " << min_dist << std::endl;
+//                std::cout << p(0) << " " << p(1) << " min_dist: " << min_dist << std::endl;
                 if (min_type == 0) {
                     KDL::Vector lineA(lines_[min_idx].a(0), lines_[min_idx].a(1), 0);
                     KDL::Vector lineB(lines_[min_idx].b(0), lines_[min_idx].b(1), 0);
-                    m_id = markers_pub.addVectorMarker(m_id, lineA, lineB, 1, 1, 1, 1, 0.04, "world");
+                    if (markers_pub != NULL) {
+                        m_id = markers_pub->addVectorMarker(m_id, lineA, lineB, 1, 1, 1, 1, 0.04, "world");
+                    }
                 }
                 else if (min_type == 1) {
                     KDL::Vector pt(convex_points_[min_idx].p(0), convex_points_[min_idx].p(1), 0);
-                    m_id = markers_pub.addSinglePointMarker(m_id, pt, 0, 1, 0, 1, 0.2, "world");
+                    if (markers_pub != NULL) {
+                        m_id = markers_pub->addSinglePointMarker(m_id, pt, 0, 1, 0, 1, 0.2, "world");
+                    }
                 }
                 else if (min_type == 2) {
                     KDL::Vector pt(concave_points_[min_idx].p(0), concave_points_[min_idx].p(1), 0);
-                    m_id = markers_pub.addSinglePointMarker(m_id, pt, 0, 1, 0, 1, 0.2, "world");
+                    if (markers_pub != NULL) {
+                        m_id = markers_pub->addSinglePointMarker(m_id, pt, 1, 0, 0, 1, 0.2, "world");
+                    }
                 }
-                m_id = markers_pub.addVectorMarker(m_id, KDL::Vector(p(0), p(1), 0), KDL::Vector(p(0)+min_v(0), p(1)+min_v(1), 0), 0, 1, 0, 1, 0.02, "world");
+                if (markers_pub != NULL) {
+                    m_id = markers_pub->addVectorMarker(m_id, KDL::Vector(p(0), p(1), 0), KDL::Vector(p(0)+min_v(0), p(1)+min_v(1), 0), 0, 1, 0, 1, 0.02, "world");
+                }
             }
             else {
-                m_id = markers_pub.addSinglePointMarker(m_id, KDL::Vector(p(0), p(1), 0), 0, 1, 0, 1, 0.03, "world");
+//                std::cout << p(0) << " " << p(1) << std::endl;
+                if (markers_pub != NULL) {
+                    m_id = markers_pub->addSinglePointMarker(m_id, KDL::Vector(p(0), p(1), 0), 0, 1, 0, 1, 0.03, "world");
+                }
             }
 
-            markers_pub.addEraseMarkers(m_id, m_id+100);
+            if (markers_pub != NULL) {
+                markers_pub->addEraseMarkers(m_id, m_id+100);
+            }
 
             for (int q_idx = 0; q_idx < ndof_; q_idx++) {
                 torque(q_idx) = 0.0;

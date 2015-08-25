@@ -35,9 +35,11 @@
 #include "Eigen/Dense"
 #include "Eigen/LU"
 
+#include <set>
+
 class Task_JLC {
 public:
-    Task_JLC(const Eigen::VectorXd &lower_limit, const Eigen::VectorXd &upper_limit, const Eigen::VectorXd &limit_range, const Eigen::VectorXd &max_trq);
+    Task_JLC(const Eigen::VectorXd &lower_limit, const Eigen::VectorXd &upper_limit, const Eigen::VectorXd &limit_range, const Eigen::VectorXd &max_trq, const std::set<int > &excluded_q_idx = std::set<int >());
 
     ~Task_JLC();
 
@@ -58,6 +60,7 @@ protected:
     Eigen::MatrixXd J_JLC_;
     Eigen::MatrixXd tmpNN_;
     Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es_;
+    std::set<int > excluded_q_idx_;
 };
 
 #endif  // TASK_JLC_H__
