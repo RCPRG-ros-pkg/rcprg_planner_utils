@@ -139,7 +139,7 @@
         task_JLC_.reset( new Task_JLC(lower_limit, upper_limit, limit_range, max_trq, jlc_excluded_q_idx) );
 
 
-        task_COL_.reset( new Task_COL(ndof_, activation_dist_, 100.0, kin_model_, col_model_) );
+        task_COL_.reset( new Task_COL(ndof_, activation_dist_, 50.0, kin_model_, col_model_) );
         task_HAND_.reset( new Task_HAND(ndof_, ndim_) );
 
         J_r_HAND_6_.resize(6, ndof_);
@@ -236,6 +236,7 @@
                     task_HAND_->compute(r_HAND_diff_, Kc_, Dxi_, J_r_HAND_, dq_, dyn_model_->getInvM(), torque_HAND_, N_HAND_);
                 }
                 else {
+//                    J_r_HAND_6_ = J_r_HAND_6_ * N_JLC_ * N_WCCr_ * N_WCCl_ * N_COL_;
 //                    Eigen::MatrixXd j = J_r_HAND_6_ * N_JLC_ * N_WCCr_ * N_WCCl_ * N_COL_;
 //                    Eigen::FullPivLU< Eigen::MatrixXd > lu(j);
 //                    lu.setThreshold(0.1);
@@ -254,8 +255,8 @@
                 // simulate one step
                 Eigen::VectorXd prev_ddq(ddq_), prev_dq(dq_);
                 dyn_model_->accel(ddq_, q_, dq_, torque_);
-                float time_d = 0.005;
-//                float time_d = 0.001;
+//                float time_d = 0.005;
+                float time_d = 0.001;
 
                 double max_f = 1.0;
                 for (int q_idx = 0; q_idx < ndof_; q_idx++) {

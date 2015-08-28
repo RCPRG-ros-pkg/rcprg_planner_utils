@@ -29,42 +29,46 @@
 // Author: Dawid Seredynski
 //
 
-#ifndef TASK_WCC_H__
-#define TASK_WCC_H__
+#ifndef VELMA_Q5Q6_COLLISION_H__
+#define VELMA_Q5Q6_COLLISION_H__
 
 #include "Eigen/Dense"
-#include "Eigen/LU"
 
 #include "planer_utils/marker_publisher.h"
-#include "planer_utils/activation_function.h"
-#include "planer_utils/velma_q5q6_collision.h"
 
-class Task_WCC {
+class VelmaQ5Q6CollisionChecker {
 public:
-    Task_WCC(int ndof, int q5_idx, int q6_idx, bool inverted=false);
-
-    ~Task_WCC();
-
-    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub=NULL);
-
-    bool inCollision() const;
-
-    bool getMinDistance(const Eigen::VectorXd &p, double d0, Eigen::VectorXd &min_v, double &min_dist, int &min_idx, int &min_type) const;
+    VelmaQ5Q6CollisionChecker(int q5_idx, int q6_idx, double d0, bool inverted);
+    ~VelmaQ5Q6CollisionChecker();
+    bool inCollision(const Eigen::VectorXd &q) const;
+    bool getMinDistance(const Eigen::VectorXd &q, Eigen::VectorXd &min_v, double &min_dist, int &min_idx, int &min_type) const;
     int visualizeBorder(MarkerPublisher *markers_pub, int m_id) const;
     int visualizeRegion(MarkerPublisher *markers_pub, int m_id, int min_idx, int min_type) const;
-
 protected:
+    bool point_inside_polygon(const Eigen::VectorXd &p) const;
 
-    int ndof_;
     int q5_idx_, q6_idx_;
-
     double d0_;
-    bool in_collision_;
 
-    VelmaQ5Q6CollisionChecker cc_;
+    static const double polygon_q5q6_[];
 
-    ActivationFunction af_;
+    class Line {
+    public:
+        Eigen::VectorXd a, b, n, ab;
+        double dn, da, db;
+    };
+
+    class PointAngle {
+    public:
+        Eigen::VectorXd p, n1, n2;
+        double dn1, dn2;
+    };
+
+    std::vector<PointAngle > convex_points_;
+    std::vector<PointAngle > concave_points_;
+    std::vector<Line > lines_;
+
 };
 
-#endif  // TASK_WCC_H__
+#endif  // VELMA_Q5Q6_COLLISION_H__
 

@@ -52,6 +52,8 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
             torque_COL.setZero();
             N_COL.setIdentity();
 
+            std::cout << "collision torques:" << std::endl;
+
             // sort the collisions by distance (ascending order)
 //            std::sort(link_collisions.begin(), link_collisions.end(), self_collision::compareCollisionInfoDist);
 
@@ -125,8 +127,8 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
 
                 if (markers_pub != NULL) {
                     m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p2_B, 1, activation, activation, 1, 0.01, "world");
-                    m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p1_B - 0.03 * it->n1_B, 1, activation, activation, 1, 0.01, "world");
-                    m_id = markers_pub->addVectorMarker(m_id, it->p2_B, it->p2_B - 0.03 * it->n2_B, 1, activation, activation, 1, 0.01, "world");
+                    m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p1_B - 0.03 * it->n1_B, 0, 1, 0, 1, 0.01, "world");
+                    m_id = markers_pub->addVectorMarker(m_id, it->p2_B, it->p2_B - 0.03 * it->n2_B, 0, 0, 1, 1, 0.01, "world");
                 }
 //                Eigen::JacobiSVD<Eigen::MatrixXd> svd(Jcol, Eigen::ComputeFullV);
 
@@ -142,10 +144,20 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                 double Mdij_inv = (Jcol * invI * Jcol.transpose())(0,0);
 
                 double D = 2.0 * 0.7 * sqrt(Mdij_inv * K);  // sqrt(K/M)
-                Eigen::VectorXd d_torque = Jcol.transpose() * (-Frep - D * ddij);
-                torque_COL += (N_PREV * N_COL).transpose() * d_torque;
-//                torque_COL += d_torque;
+                Eigen::VectorXd d_torque = Jcol.transpose() * (-Frep);// - D * ddij);
+//                torque_COL += (N_PREV * N_COL).transpose() * d_torque;
+                std::cout << "t:  " << d_torque.transpose() << std::endl;
+                std::cout << "j1: " << jac1 << std::endl;
+                std::cout << "j2: " << jac2 << std::endl;
+                torque_COL += d_torque;
                 N_COL = N_COL * Ncol12;
+
+                markers_pub->publish();
+
+                ros::spinOnce();
+                ros::Duration(1.0).sleep();
+
+                getchar();
             }
 
             if (markers_pub != NULL) {
