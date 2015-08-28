@@ -29,49 +29,18 @@
 // Author: Dawid Seredynski
 //
 
-#ifndef TASK_JLC_H__
-#define TASK_JLC_H__
+#ifndef ACTIVATION_FUNCTION_H__
+#define ACTIVATION_FUNCTION_H__
 
-#include "Eigen/Dense"
-#include "Eigen/LU"
-
-#include <set>
-
-#include <collision_convex_model/collision_convex_model.h>
-#include "kin_model/kin_model.h"
-#include "planer_utils/activation_function.h"
-#include "planer_utils/marker_publisher.h"
-
-class Task_JLC {
+class ActivationFunction {
 public:
-    Task_JLC(const Eigen::VectorXd &lower_limit, const Eigen::VectorXd &upper_limit, const Eigen::VectorXd &limit_range, const Eigen::VectorXd &max_trq, const std::set<int > &excluded_q_idx = std::set<int >());
-
-    ~Task_JLC();
-
-    double jointLimitTrq(double hl, double ll, double ls, double r_max, double q, double &out_limit_activation) const;
-
-    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, Eigen::VectorXd &torque, Eigen::MatrixXd &N);
-
-    int visualize(MarkerPublisher *markers_pub, int m_id, const boost::shared_ptr<KinematicModel> &kin_model, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::vector<KDL::Frame > &links_fk) const;
+    ActivationFunction(double z1, double Nmax);
+    double func_Ndes(double z) const;
 
 protected:
-    int q_length_;
-    Eigen::VectorXd lower_limit_;
-    Eigen::VectorXd upper_limit_;
-    Eigen::VectorXd limit_range_;
-    Eigen::VectorXd max_trq_;
-    Eigen::VectorXd activation_JLC_;
-    Eigen::VectorXd k_;
-    Eigen::VectorXd k0_;
-    Eigen::MatrixXd q_, d_;
-    Eigen::MatrixXd J_JLC_;
-    Eigen::MatrixXd tmpNN_;
-    Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es_;
-    std::set<int > excluded_q_idx_;
-
-    ActivationFunction af_;
-//    std::vector<ActivationFunction > af_vec_;
+    double func_g(double z) const;
+    double k1_, k2_, k3_, k4_, z1_, z2_;
 };
 
-#endif  // TASK_JLC_H__
+#endif  // ACTIVATION_FUNCTION_H__
 

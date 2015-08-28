@@ -56,7 +56,9 @@ const double Task_WCC::polygon_q5q6_[] = {
         ndof_(ndof),
         q5_idx_(q5_idx),
         q6_idx_(q6_idx),
-        d0_(20.0/180.0*3.1415)
+        d0_(20.0/180.0*3.1415),
+        in_collision_(false),
+        af_(0.1 * d0_, 4.0 / d0_)
     {
         int lines_count = sizeof(polygon_q5q6_)/sizeof(double)/2;
         double inv = 1.0;
@@ -126,11 +128,45 @@ const double Task_WCC::polygon_q5q6_[] = {
     Task_WCC::~Task_WCC() {
     }
 
+    bool Task_WCC::point_inside_polygon(const Eigen::VectorXd &p) const {
+        bool inside = false;
+        for (int line_idx = 0; line_idx < lines_.size(); line_idx++) {
+            const Eigen::VectorXd &a = lines_[line_idx].a;
+            const Eigen::VectorXd &b = lines_[line_idx].b;
+            if (p(1) > a(1) || p(1) > b(1)) {
+                if (p(1) <= a(1) || p(1) <= b(1)) {
+                    if (p(0) <= a(0) || p(0) <= b(0)) {
+                        double xinters = 0.0;
+                        if (a(1) != b(1)) {
+                            xinters = (p(1)-a(1))*(b(0)-a(0))/(b(1)-a(1))+a(0);
+                        }
+                        if (a(0) == b(0) || p(0) <= xinters) {
+                            inside = !inside;
+                        }
+                    }
+                }
+            }
+        }
+        return inside;
+    }
+
     void Task_WCC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub) {
 
             Eigen::VectorXd p(2);
             p(0) = q(q5_idx_);
             p(1) = q(q6_idx_);
+
+            torque.setZero();
+            N.setIdentity();
+
+            if (!point_inside_polygon(p)) {
+                in_collision_ = true;
+                return;
+            }
+            else {
+                in_collision_ = false;
+            }
+
             KDL::Vector pt(q(q5_idx_), q(q6_idx_), 0);
             int m_id = 2000;
 
@@ -199,7 +235,6 @@ const double Task_WCC::polygon_q5q6_[] = {
             }
 
             if (found) {
-//                std::cout << p(0) << " " << p(1) << " min_dist: " << min_dist << std::endl;
                 if (min_type == 0) {
                     KDL::Vector lineA(lines_[min_idx].a(0), lines_[min_idx].a(1), 0);
                     KDL::Vector lineB(lines_[min_idx].b(0), lines_[min_idx].b(1), 0);
@@ -224,7 +259,6 @@ const double Task_WCC::polygon_q5q6_[] = {
                 }
             }
             else {
-//                std::cout << p(0) << " " << p(1) << std::endl;
                 if (markers_pub != NULL) {
                     m_id = markers_pub->addSinglePointMarker(m_id, KDL::Vector(p(0), p(1), 0), 0, 1, 0, 1, 0.03, "world");
                 }
@@ -233,11 +267,6 @@ const double Task_WCC::polygon_q5q6_[] = {
             if (markers_pub != NULL) {
                 markers_pub->addEraseMarkers(m_id, m_id+100);
             }
-
-            for (int q_idx = 0; q_idx < ndof_; q_idx++) {
-                torque(q_idx) = 0.0;
-            }
-            N = Eigen::MatrixXd::Identity(ndof_, ndof_);
 
             if (!found) {
                 return;
@@ -269,16 +298,7 @@ const double Task_WCC::polygon_q5q6_[] = {
             // calculate relative velocity between points (1 dof)
             double ddij = (J * dq)(0,0);
 
-            double activation = 5.0*f;
-            if (activation > 1.0) {
-                activation = 1.0;
-            }
-            if (activation < 0.0) {
-                activation = 0.0;
-            }
-//            if (ddij <= 0.0) {
-//                activation = 0.0;
-//            }
+            double activation = 1.0 - af_.func_Ndes(min_dist);
 
             N = Eigen::MatrixXd::Identity(ndof_, ndof_) - (J.transpose() * activation * J);
 
@@ -288,5 +308,9 @@ const double Task_WCC::polygon_q5q6_[] = {
             double D = 2.0 * 0.7 * sqrt(Mdij_inv * K);  // sqrt(K/M)
             Eigen::VectorXd d_torque = J.transpose() * (Frep - D * ddij);
             torque += d_torque;
+    }
+
+    bool Task_WCC::inCollision() const {
+        return in_collision_;
     }
 

@@ -35,20 +35,26 @@ Task_COL::Task_COL(int ndof, double activation_dist, double Fmax, const boost::s
         ndof_(ndof),
         activation_dist_(activation_dist),
         Fmax_(Fmax),
-        kin_model_(kin_model)
-    {
-        for (int l_idx = 0; l_idx < col_model->getLinksCount(); l_idx++) {
-            link_names_vec_.push_back(col_model->getLinkName(l_idx));
-        }
+        kin_model_(kin_model),
+        af_(0.2 * activation_dist, 2.0 / activation_dist)
+{
+    for (int l_idx = 0; l_idx < col_model->getLinksCount(); l_idx++) {
+        link_names_vec_.push_back(col_model->getLinkName(l_idx));
     }
+}
 
-    Task_COL::~Task_COL() {
-    }
+Task_COL::~Task_COL() {
+}
 
-void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, const std::vector<KDL::Frame > &links_fk,
-                        const std::vector<self_collision::CollisionInfo> &link_collisions, Eigen::VectorXd &torque_COL, Eigen::MatrixXd &N_COL) {
+void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, const std::vector<KDL::Frame > &links_fk, const Eigen::MatrixXd &N_PREV,
+                        std::vector<self_collision::CollisionInfo> &link_collisions, Eigen::VectorXd &torque_COL, Eigen::MatrixXd &N_COL, MarkerPublisher *markers_pub, int m_id) {
+            constraints_count_ = 0;
             torque_COL.setZero();
             N_COL.setIdentity();
+
+            // sort the collisions by distance (ascending order)
+//            std::sort(link_collisions.begin(), link_collisions.end(), self_collision::compareCollisionInfoDist);
+
             for (std::vector<self_collision::CollisionInfo>::const_iterator it = link_collisions.begin(); it != link_collisions.end(); it++) {
                 const KDL::Frame &T_B_L1 = links_fk[it->link1_idx];
                 const std::string &link1_name = link_names_vec_[it->link1_idx];
@@ -62,14 +68,6 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                 KDL::Vector n1_L1 = KDL::Frame(T_L1_B.M) * it->n1_B;
                 KDL::Vector n2_L2 = KDL::Frame(T_L2_B.M) * it->n2_B;
 
-                // visualization
-/*                if (it->dist > 0.0) {
-                    m_id = publishVectorMarker(markers_pub_, m_id, it->p1_B, it->p2_B, 1, 1, 1, 0.01, "base");
-                }
-                else {
-                    m_id = publishVectorMarker(markers_pub_, m_id, it->p1_B, it->p2_B, 1, 0, 0, 0.01, "base");
-                }
-*/
                 KinematicModel::Jacobian jac1(6, ndof_), jac2(6, ndof_);
                 kin_model_->getJacobiansForPairX(jac1, jac2, link1_name, p1_L1, link2_name, p2_L2, q);
 
@@ -119,17 +117,17 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                 // calculate relative velocity between points (1 dof)
                 double ddij = (Jcol * dq)(0,0);
 
-                double activation = 5.0*depth/activation_dist_;
-                if (activation > 1.0) {
-                    activation = 1.0;
-                }
-                if (activation < 0.0) {
-                    activation = 0.0;
-                }
-                if (ddij <= 0.0) {
-                    activation = 0.0;
+                double activation = 1.0 - af_.func_Ndes(it->dist);
+
+                if (activation > 0.1) {
+                    constraints_count_++;
                 }
 
+                if (markers_pub != NULL) {
+                    m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p2_B, 1, activation, activation, 1, 0.01, "world");
+                    m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p1_B - 0.03 * it->n1_B, 1, activation, activation, 1, 0.01, "world");
+                    m_id = markers_pub->addVectorMarker(m_id, it->p2_B, it->p2_B - 0.03 * it->n2_B, 1, activation, activation, 1, 0.01, "world");
+                }
 //                Eigen::JacobiSVD<Eigen::MatrixXd> svd(Jcol, Eigen::ComputeFullV);
 
 //                Eigen::MatrixXd activation_matrix = Eigen::MatrixXd::Zero(ndof_, ndof_);
@@ -139,14 +137,19 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                 Eigen::MatrixXd Ncol12(ndof_, ndof_);
                 Ncol12 = Eigen::MatrixXd::Identity(ndof_, ndof_) - (Jcol.transpose() * activation * Jcol);
 //                Ncol12 = Eigen::MatrixXd::Identity(ndof_, ndof_) - (svd.matrixV() * activation_matrix * svd.matrixV().transpose());
-                N_COL = N_COL * Ncol12;
 
                 // calculate collision mass (1 dof)
                 double Mdij_inv = (Jcol * invI * Jcol.transpose())(0,0);
 
                 double D = 2.0 * 0.7 * sqrt(Mdij_inv * K);  // sqrt(K/M)
                 Eigen::VectorXd d_torque = Jcol.transpose() * (-Frep - D * ddij);
-                torque_COL += d_torque;
+                torque_COL += (N_PREV * N_COL).transpose() * d_torque;
+//                torque_COL += d_torque;
+                N_COL = N_COL * Ncol12;
+            }
+
+            if (markers_pub != NULL) {
+                markers_pub->addEraseMarkers(m_id, m_id+100);
             }
     }
 

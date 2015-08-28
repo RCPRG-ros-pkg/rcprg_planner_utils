@@ -51,6 +51,55 @@ void MarkerPublisher::publish() {
 void MarkerPublisher::clear() {
     marker_array_.markers.clear();
 }
+/*
+int MarkerPublisher::addMarkerArray(int m_id, const visualization_msgs::MarkerArray &ma, const std::string &frame_id) {
+
+    for (int i=0; i<ma.markers.size(); i++) {
+        marker_array_.markers.push_back( ma.markers[i] );
+        marker_array_.markers.back();
+    }
+
+}
+*/
+
+int MarkerPublisher::addLineListMarker(int m_id, const std::vector<KDL::Vector > &pts, const KDL::Frame &fr, double r, double g, double b, double a, double size, const std::string &frame_id) {
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time();
+    marker.ns = "default";
+    marker.id = m_id;
+    marker.type = visualization_msgs::Marker::LINE_LIST;
+    marker.action = visualization_msgs::Marker::ADD;
+	marker.pose.position.x = fr.p.x();
+	marker.pose.position.y = fr.p.y();
+	marker.pose.position.z = fr.p.z();
+	double qx, qy, qz, qw;
+	fr.M.GetQuaternion(qx, qy, qz, qw);
+	marker.pose.orientation.x = qx;
+	marker.pose.orientation.y = qy;
+	marker.pose.orientation.z = qz;
+	marker.pose.orientation.w = qw;
+    for (int i=0; i<pts.size(); i+=2) {
+        geometry_msgs::Point p1, p2;
+        p1.x = pts[i].x();
+        p1.y = pts[i].y();
+        p1.z = pts[i].z();
+        p2.x = pts[i+1].x();
+        p2.y = pts[i+1].y();
+        p2.z = pts[i+1].z();
+        marker.points.push_back(p1);
+        marker.points.push_back(p2);
+    }
+    marker.scale.x = size;
+    marker.scale.y = 0.0;
+    marker.scale.z = 0.0;
+    marker.color.a = a;
+    marker.color.r = r;
+    marker.color.g = g;
+    marker.color.b = b;
+    marker_array_.markers.push_back(marker);
+    return m_id + 1;
+}
 
 int MarkerPublisher::addSinglePointMarker(int m_id, const KDL::Vector &pos, double r, double g, double b, double a, double size, const std::string &frame_id) {
     visualization_msgs::Marker marker;

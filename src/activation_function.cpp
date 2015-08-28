@@ -29,49 +29,39 @@
 // Author: Dawid Seredynski
 //
 
-#ifndef TASK_JLC_H__
-#define TASK_JLC_H__
-
-#include "Eigen/Dense"
-#include "Eigen/LU"
-
-#include <set>
-
-#include <collision_convex_model/collision_convex_model.h>
-#include "kin_model/kin_model.h"
 #include "planer_utils/activation_function.h"
-#include "planer_utils/marker_publisher.h"
 
-class Task_JLC {
-public:
-    Task_JLC(const Eigen::VectorXd &lower_limit, const Eigen::VectorXd &upper_limit, const Eigen::VectorXd &limit_range, const Eigen::VectorXd &max_trq, const std::set<int > &excluded_q_idx = std::set<int >());
+ActivationFunction::ActivationFunction(double z1, double Nmax) {
+    // parameters k were calculated in matlab by commands:
+    // syms k1 k2 k3 k4 z1 z2 u Nmax
+    // [a1,a2,a3,a4,a5]=solve(k1*z1^3 + k2*z1^2 + k3*z1 + k4 == 0, k1*(u+z1)^3 + k2*(u+z1)^2 + k3*(u+z1) + k4 == 1, 3*k1*z1^2 + 2*k2*z1 + k3 == 0, 3*k1*(u+z1)^2 + 2*k2*(u+z1) + k3 == 0, 3*k1*((u+2*z1)/2)^2 + 2*k2*((u+2*z1)/2) + k3 == Nmax, k1, k2, k3, k4, u)
 
-    ~Task_JLC();
+    z1_ = z1;
 
-    double jointLimitTrq(double hl, double ll, double ls, double r_max, double q, double &out_limit_activation) const;
+    k1_ = -(16.0*Nmax*Nmax*Nmax)/27.0;
+    k2_ = (16.0*z1_*Nmax*Nmax*Nmax)/9.0 + (4.0*Nmax*Nmax)/3.0;
+    k3_ = - (8.0*Nmax*Nmax*z1_)/3.0 - (16.0*Nmax*Nmax*Nmax*z1_*z1_)/9.0;
+    k4_ = (4.0*Nmax*Nmax*z1_*z1_*(4.0*Nmax*z1_ + 9.0))/27.0;
+    double u = 3.0/(2.0*Nmax);
+    z2_ = u + z1_;
 
-    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, Eigen::VectorXd &torque, Eigen::MatrixXd &N);
+//    std::cout << "z2: " << z2_ << std::endl;
+//    for (double z = 0.0; z <= 1.0; z += 0.01) {
+//        std::cout << "Ndes(" << (z * activation_dist_) << ") = " << func_Ndes(z * activation_dist_) << std::endl;
+//    }
+}
 
-    int visualize(MarkerPublisher *markers_pub, int m_id, const boost::shared_ptr<KinematicModel> &kin_model, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::vector<KDL::Frame > &links_fk) const;
+double ActivationFunction::func_g(double z) const {
+    return z * (z * (z * k1_ + k2_) + k3_) + k4_;
+}
 
-protected:
-    int q_length_;
-    Eigen::VectorXd lower_limit_;
-    Eigen::VectorXd upper_limit_;
-    Eigen::VectorXd limit_range_;
-    Eigen::VectorXd max_trq_;
-    Eigen::VectorXd activation_JLC_;
-    Eigen::VectorXd k_;
-    Eigen::VectorXd k0_;
-    Eigen::MatrixXd q_, d_;
-    Eigen::MatrixXd J_JLC_;
-    Eigen::MatrixXd tmpNN_;
-    Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es_;
-    std::set<int > excluded_q_idx_;
-
-    ActivationFunction af_;
-//    std::vector<ActivationFunction > af_vec_;
-};
-
-#endif  // TASK_JLC_H__
+double ActivationFunction::func_Ndes(double z) const {
+    if (z < z1_) {
+        return 0.0;
+    }
+    else if (z <= z2_) {
+        return func_g(z);
+    }
+    return 1.0;
+}
 

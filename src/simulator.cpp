@@ -34,7 +34,7 @@
     DynamicsSimulatorHandPose::DynamicsSimulatorHandPose(int ndof, int ndim, const std::string &effector_name, const boost::shared_ptr<self_collision::CollisionModel> &col_model,
                         const boost::shared_ptr<KinematicModel> &kin_model,
                         const boost::shared_ptr<DynamicModel > &dyn_model,
-                        const std::vector<std::string > &joint_names) :
+                        const std::vector<std::string > &joint_names, const Eigen::VectorXd &max_q) :
         ndof_(ndof),
         ndim_(ndim),
         effector_name_(effector_name),
@@ -46,7 +46,7 @@
         kin_model_(kin_model),
         dyn_model_(dyn_model),
         links_fk_(col_model->getLinksCount()),
-        activation_dist_(0.05),
+        activation_dist_(0.04),
         torque_JLC_( Eigen::VectorXd::Zero(ndof_) ),
         N_JLC_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
         torque_WCCr_( Eigen::VectorXd::Zero(ndof_) ),
@@ -59,7 +59,9 @@
         N_HAND_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
         Kc_(ndim_),
         Dxi_(ndim_),
-        r_HAND_diff_(ndim_)
+        r_HAND_diff_(ndim_),
+        in_collision_(false),
+        max_q_(max_q)
     {
         for (int q_idx = 0; q_idx < ndof; q_idx++) {
             q_[q_idx] = 0.0;
@@ -68,8 +70,8 @@
             torque_[q_idx] = 0.0;
         }
 
-        double Kc_lin = 20.0;
-        double Kc_rot = 2.0;
+        double Kc_lin = 200.0;
+        double Kc_rot = 20.0;
         if (ndim_ == 3) {
             Kc_[0] = Kc_lin;
             Kc_[1] = Kc_lin;
@@ -109,10 +111,12 @@
                 wcc_l_q6_idx = q_idx;
             }
 
-            if (!col_model->getJointLimits( (*name_it), lower_limit[q_idx], upper_limit[q_idx] )) {
-                std::cout << "ERROR: could not find joint with name " << (*name_it) << std::endl;
-                return;
-            }
+            lower_limit[q_idx] = kin_model->getLowerLimit(q_idx);
+            upper_limit[q_idx] = kin_model->getUpperLimit(q_idx);
+//            if (!col_model->getJointLimits( (*name_it), lower_limit[q_idx], upper_limit[q_idx] )) {
+//                std::cout << "ERROR: could not find joint with name " << (*name_it) << std::endl;
+//                return;
+//            }
             limit_range[q_idx] = 10.0 / 180.0 * 3.141592653589793;
             max_trq[q_idx] = 10.0;
         }
@@ -121,7 +125,6 @@
             std::cout << "ERROR: DynamicsSimulatorHandPose works for 3 or 6 dimensions" << std::endl;
         }
 
-        std::cout << wcc_r_q5_idx << " " << wcc_r_q6_idx << " " << wcc_l_q5_idx << " " << wcc_l_q6_idx << std::endl;
         std::set<int > jlc_excluded_q_idx;
         if (wcc_r_q5_idx != -1 && wcc_r_q6_idx != -1) {
             jlc_excluded_q_idx.insert(wcc_r_q5_idx);
@@ -136,7 +139,7 @@
         task_JLC_.reset( new Task_JLC(lower_limit, upper_limit, limit_range, max_trq, jlc_excluded_q_idx) );
 
 
-        task_COL_.reset( new Task_COL(ndof_, activation_dist_, 10.0, kin_model_, col_model_) );
+        task_COL_.reset( new Task_COL(ndof_, activation_dist_, 100.0, kin_model_, col_model_) );
         task_HAND_.reset( new Task_HAND(ndof_, ndim_) );
 
         J_r_HAND_6_.resize(6, ndof_);
@@ -159,7 +162,7 @@
         r_HAND_target_ = r_HAND_target;
     }
 
-    void DynamicsSimulatorHandPose::oneStep(const KDL::Twist &diff) {
+    void DynamicsSimulatorHandPose::oneStep(const KDL::Twist &diff, MarkerPublisher *markers_pub, int m_id) {
                 // calculate forward kinematics for all links
                 for (int l_idx = 0; l_idx < col_model_->getLinksCount(); l_idx++) {
                     kin_model_->calculateFk(links_fk_[l_idx], col_model_->getLinkName(l_idx), q_);
@@ -171,16 +174,27 @@
                 // joint limit avoidance
                 //
                 task_JLC_->compute(q_, dq_, dyn_model_->getM(), torque_JLC_, N_JLC_);
+                if (markers_pub != NULL) {
+                    m_id = task_JLC_->visualize(markers_pub, m_id, kin_model_, col_model_, links_fk_);
+                }
+
+                in_collision_ = false;
 
                 //
                 // wrist collision constraint
                 //
                 if (task_WCCr_ != NULL) {
                     task_WCCr_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCr_, N_WCCr_);
+                    if (task_WCCr_->inCollision()) {
+                        in_collision_ = true;
+                    }
                 }
 
                 if (task_WCCl_ != NULL) {
                     task_WCCl_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCl_, N_WCCl_);
+                    if (task_WCCl_->inCollision()) {
+                        in_collision_ = true;
+                    }
                 }
 
                 //
@@ -188,7 +202,14 @@
                 //
                 std::vector<self_collision::CollisionInfo> link_collisions;
                 self_collision::getCollisionPairs(col_model_, links_fk_, activation_dist_, link_collisions);
-                task_COL_->compute(q_, dq_, dyn_model_->getInvM(), links_fk_, link_collisions, torque_COL_, N_COL_);
+                for (std::vector<self_collision::CollisionInfo>::const_iterator it = link_collisions.begin(); it != link_collisions.end(); it++) {
+                    if ( it->dist <= 0.0 ) {
+                        in_collision_ = true;
+                        break;
+                    }
+                }
+
+                task_COL_->compute(q_, dq_, dyn_model_->getInvM(), links_fk_, N_JLC_ * N_WCCr_ * N_WCCl_, link_collisions, torque_COL_, N_COL_, markers_pub, m_id);
 
                 //
                 // effector task
@@ -215,27 +236,55 @@
                     task_HAND_->compute(r_HAND_diff_, Kc_, Dxi_, J_r_HAND_, dq_, dyn_model_->getInvM(), torque_HAND_, N_HAND_);
                 }
                 else {
+//                    Eigen::MatrixXd j = J_r_HAND_6_ * N_JLC_ * N_WCCr_ * N_WCCl_ * N_COL_;
+//                    Eigen::FullPivLU< Eigen::MatrixXd > lu(j);
+//                    lu.setThreshold(0.1);
+//                    if (lu.rank() < 6) {
+//                        in_collision_ = true;
+//                    }
+//                    std::cout << lu.rank() << std::endl;
                     task_HAND_->compute(r_HAND_diff_, Kc_, Dxi_, J_r_HAND_6_, dq_, dyn_model_->getInvM(), torque_HAND_, N_HAND_);
                 }
 
 //                torque_ = torque_JLC_ + N_JLC_.transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
                 torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
+//                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_HAND_);
 
 
                 // simulate one step
                 Eigen::VectorXd prev_ddq(ddq_), prev_dq(dq_);
                 dyn_model_->accel(ddq_, q_, dq_, torque_);
                 float time_d = 0.005;
+//                float time_d = 0.001;
+
+                double max_f = 1.0;
                 for (int q_idx = 0; q_idx < ndof_; q_idx++) {
                     dq_[q_idx] += (prev_ddq[q_idx] + ddq_[q_idx]) / 2.0 * time_d;
-                    q_[q_idx] += (prev_dq[q_idx] + dq_[q_idx]) / 2.0 * time_d;
+                    double f = fabs(dq_(q_idx) / max_q_(q_idx));
+                    if (max_f < f) {
+                        max_f = f;
+                    }
                 }
+
+                KDL::Vector p(r_HAND_target_.p);
+                double qx, qy, qz, qw;
+                r_HAND_target_.M.GetQuaternion(qx,qy,qz,qw);
+
+                if (max_f > 1.0) {
+                    dq_ /= max_f;
+                }
+
+                q_ += (prev_dq + dq_) / 2.0 * time_d;
     }
 
-    void DynamicsSimulatorHandPose::oneStep() {
+    void DynamicsSimulatorHandPose::oneStep(MarkerPublisher *markers_pub, int m_id) {
         KDL::Frame r_HAND_current;
         kin_model_->calculateFk(r_HAND_current, effector_name_, q_);
         KDL::Twist diff = KDL::diff(r_HAND_current, r_HAND_target_, 1.0);
-        oneStep(diff);
+        oneStep(diff, markers_pub, m_id);
+    }
+
+    bool DynamicsSimulatorHandPose::inCollision() const {
+        return in_collision_;
     }
 

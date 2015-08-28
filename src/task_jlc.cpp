@@ -43,15 +43,19 @@
         q_(q_length_, q_length_), d_(q_length_, q_length_),
         J_JLC_(q_length_, q_length_),
         tmpNN_(q_length_, q_length_),
-        excluded_q_idx_(excluded_q_idx)
+        excluded_q_idx_(excluded_q_idx),
+        af_(0.1, 4.0)
     {
+//        for (int q_idx = 0; q_idx < q_length_; q_idx++) {
+//            af_vec_.push_back( ActivationFunction(limit_range(q_idx), 4.0/limit_range(q_idx)) );
+//        }        
     }
 
     Task_JLC::~Task_JLC() {
     }
 
     double Task_JLC::jointLimitTrq(double hl, double ll, double ls,
-        double r_max, double q, double &out_limit_activation) {
+        double r_max, double q, double &out_limit_activation) const {
         if (q > hl) {
             q = hl;
         }
@@ -80,13 +84,17 @@
                 }
                 else
                 {
+                    double depth01 = 0.0;
                     torque(q_idx) = jointLimitTrq(upper_limit_[q_idx],
                                                lower_limit_[q_idx], limit_range_[q_idx], max_trq_[q_idx],
-                                               q[q_idx], activation_JLC_[q_idx]);
-                    activation_JLC_[q_idx] *= 10.0;
-                    if (activation_JLC_[q_idx] > 1.0) {
-                        activation_JLC_[q_idx] = 1.0;
-                    }
+                                               q[q_idx], depth01);
+
+                    activation_JLC_[q_idx] = 1.0 - af_.func_Ndes(1.0 - depth01);
+
+//                    activation_JLC_[q_idx] *= 10.0;
+//                    if (activation_JLC_[q_idx] > 1.0) {
+//                        activation_JLC_[q_idx] = 1.0;
+//                    }
 //                  if ( (torque(q_idx) > 0 && dq(q_idx) > 0) || (torque(q_idx) <= 0 && dq(q_idx) <= 0)) {
 //                      activation_JLC_[q_idx] = 0.0;
 //                  }
@@ -113,6 +121,26 @@
             // calculate jacobian (the activation function)
             J_JLC_ = activation_JLC_.asDiagonal();
             N = Eigen::MatrixXd::Identity(q_length_, q_length_) - (J_JLC_.transpose() * J_JLC_);
-
     }
+
+int Task_JLC::visualize(MarkerPublisher *markers_pub, int m_id, const boost::shared_ptr<KinematicModel> &kin_model, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::vector<KDL::Frame > &links_fk) const {
+    for (int q_idx = 0; q_idx < q_length_; q_idx++) {
+        if (excluded_q_idx_.find(q_idx) == excluded_q_idx_.end()) {
+            KDL::Vector axis, origin;
+            std::string link_name;
+            kin_model->getJointAxisAndOrigin(q_idx, axis, origin);
+            origin = KDL::Vector();
+            kin_model->getJointLinkName(q_idx, link_name);
+            const KDL::Frame &T_B_L = links_fk[col_model->getLinkIndex(link_name)];
+
+            if (activation_JLC_[q_idx] < 0.001) {
+                m_id = markers_pub->addVectorMarker(m_id, T_B_L * origin, T_B_L * (origin + 0.4 * axis), 0, 1, 0, 1, 0.01, "world");
+            }
+            else {
+                m_id = markers_pub->addVectorMarker(m_id, T_B_L * origin, T_B_L * (origin + 0.4 * axis), 1, activation_JLC_[q_idx], activation_JLC_[q_idx], 1, 0.01, "world");
+            }
+        }
+    }
+    return m_id;
+}
 

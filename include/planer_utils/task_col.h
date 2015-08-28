@@ -36,6 +36,8 @@
 
 #include <collision_convex_model/collision_convex_model.h>
 #include "kin_model/kin_model.h"
+#include "planer_utils/activation_function.h"
+#include "planer_utils/marker_publisher.h"
 
 class Task_COL {
 public:
@@ -43,7 +45,8 @@ public:
 
     ~Task_COL();
 
-    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, const std::vector<KDL::Frame > &links_fk, const std::vector<self_collision::CollisionInfo> &link_collisions, Eigen::VectorXd &torque_COL, Eigen::MatrixXd &N_COL);
+    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, const std::vector<KDL::Frame > &links_fk, const Eigen::MatrixXd &N_PREV,
+                    std::vector<self_collision::CollisionInfo> &link_collisions, Eigen::VectorXd &torque_COL, Eigen::MatrixXd &N_COL, MarkerPublisher *markers_pub=NULL, int m_id=0);
 
 protected:
     int ndof_;
@@ -51,6 +54,8 @@ protected:
     double Fmax_;
     const boost::shared_ptr<KinematicModel> &kin_model_;
     std::vector<std::string > link_names_vec_;
+    ActivationFunction af_;
+    int constraints_count_;
 };
 
 #endif  // TASK_COL_H__

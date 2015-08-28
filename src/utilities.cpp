@@ -75,7 +75,26 @@
             for (self_collision::Link::VecPtrCollision::const_iterator it = (*l_it)->collision_array.begin(); it != (*l_it)->collision_array.end(); it++) {
                 KDL::Frame T_B_O = T_B_L * (*it)->origin;
                 if ((*it)->geometry->getType() == self_collision::Geometry::CONVEX) {
-                    // TODO
+                    self_collision::Convex *convex = static_cast<self_collision::Convex* >((*it)->geometry.get());
+
+                    const std::vector<KDL::Vector >& points = convex->getPoints();
+                    const std::vector<int >& polygons = convex->getPolygons();
+                    std::vector<KDL::Vector > pts;
+
+	                int poly_idx = 0;
+	                while (poly_idx < polygons.size())
+	                {
+		                int points_in_poly = polygons[poly_idx];
+		                for (int j=0; j<points_in_poly; j++)
+		                {
+                            int idx1 = poly_idx + 1 + j;
+                            int idx2 = poly_idx + 1 + (j+1)%points_in_poly;
+			                pts.push_back( points[polygons[idx1]] );
+                            pts.push_back( points[polygons[idx2]] );
+		                }
+		                poly_idx += points_in_poly+1;
+	                }
+                    m_id = markers_pub.addLineListMarker(m_id, pts, T_B_O, 0, 1, 0, 1, 0.02, "world");
                 }
                 else if ((*it)->geometry->getType() == self_collision::Geometry::SPHERE) {
                     self_collision::Sphere *sphere = static_cast<self_collision::Sphere* >((*it)->geometry.get());

@@ -47,6 +47,7 @@
 #include "planer_utils/task_hand.h"
 #include "planer_utils/task_jlc.h"
 #include "planer_utils/task_wcc.h"
+#include "planer_utils/marker_publisher.h"
 
 class DynamicsSimulatorHandPose {
 private:
@@ -83,6 +84,9 @@ protected:
     Eigen::VectorXd Dxi_;
     Eigen::VectorXd r_HAND_diff_;
 
+    bool in_collision_;
+    Eigen::VectorXd max_q_;
+
     std::vector<KDL::Frame > links_fk_;
     KDL::Frame r_HAND_target_;
     KinematicModel::Jacobian J_r_HAND_6_, J_r_HAND_;
@@ -92,13 +96,14 @@ public:
     DynamicsSimulatorHandPose(int ndof, int ndim, const std::string &effector_name, const boost::shared_ptr<self_collision::CollisionModel> &col_model,
                         const boost::shared_ptr<KinematicModel> &kin_model,
                         const boost::shared_ptr<DynamicModel > &dyn_model,
-                        const std::vector<std::string > &joint_names);
+                        const std::vector<std::string > &joint_names, const Eigen::VectorXd &max_q);
 
     void setState(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::VectorXd &ddq);
     void getState(Eigen::VectorXd &q, Eigen::VectorXd &dq, Eigen::VectorXd &ddq);
     void setTarget(const KDL::Frame &r_HAND_target);
-    void oneStep(const KDL::Twist &diff);
-    void oneStep();
+    void oneStep(const KDL::Twist &diff, MarkerPublisher *markers_pub=NULL, int m_id=0);
+    void oneStep(MarkerPublisher *markers_pub=NULL, int m_id=0);
+    bool inCollision() const;
 };
 
 #endif  // SIMULATOR_H__

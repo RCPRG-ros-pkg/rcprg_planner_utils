@@ -36,6 +36,7 @@
 #include "Eigen/LU"
 
 #include "planer_utils/marker_publisher.h"
+#include "planer_utils/activation_function.h"
 
 class Task_WCC {
 public:
@@ -45,7 +46,11 @@ public:
 
     void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub=NULL);
 
+    bool inCollision() const;
+
 protected:
+    bool point_inside_polygon(const Eigen::VectorXd &p) const;
+
     int ndof_;
     int q5_idx_, q6_idx_;
 
@@ -68,6 +73,9 @@ protected:
     std::vector<Line > lines_;
 
     double d0_;
+    bool in_collision_;
+
+    ActivationFunction af_;
 };
 
 #endif  // TASK_WCC_H__

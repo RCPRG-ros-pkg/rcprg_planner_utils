@@ -62,6 +62,7 @@ protected:
     Eigen::MatrixXd tmpKN_;
     Eigen::MatrixXd Ji_;
     Eigen::VectorXd wrench_tmp;
+    Eigen::VectorXd max_wrench_;
 };
 
 #endif  // TASK_HAND_H__

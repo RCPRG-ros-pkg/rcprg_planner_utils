@@ -54,8 +54,17 @@
         tmpK_(dim_),
         tmpKN_(dim_, ndof_),
         Ji_(ndof_, dim_),
-        wrench_tmp(dim_)
+        wrench_tmp(dim_),
+        max_wrench_(dim_)
     {
+        if (dim_ == 3) {
+            max_wrench_(0) = max_wrench_(1) = 5.0;
+            max_wrench_(2) = 1.0;
+        }
+        else {
+            max_wrench_(0) = max_wrench_(1) = max_wrench_(2) = 20.0;
+            max_wrench_(3) = max_wrench_(4) = max_wrench_(5) = 4.0;
+        }
         lu_ = Eigen::PartialPivLU<Eigen::MatrixXd>(ndof_);
         luKK_ = Eigen::PartialPivLU<Eigen::MatrixXd>(dim_);
     }
@@ -70,10 +79,23 @@
             for (int dim_idx = 0; dim_idx < dim_; dim_idx++) {
                 wrench_[dim_idx] = Kc[dim_idx] * T_diff[dim_idx];
             }
-            torque = J.transpose() * wrench_;
+
+            double max_factor = 1.0;
+
+            for (int dim_idx=0; dim_idx < dim_; dim_idx++) {
+                double factor = wrench_(dim_idx) / max_wrench_(dim_idx);
+                if (factor > max_factor) {
+                    max_factor = factor;
+                }
+            }
+
+            wrench_ /= max_factor;
+
+            JT = J.transpose();
+
+            torque = JT * wrench_;
 
             // code form cartesian_impedance.h
-            JT = J.transpose();
 //            lu_.compute(invI);
 //            Eigen::MatrixXd Mi = lu_.inverse();
             Eigen::MatrixXd Mi = invI;
