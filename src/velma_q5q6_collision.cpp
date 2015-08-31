@@ -130,7 +130,8 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
         Eigen::VectorXd p(2);
         p(0) = q(q5_idx_);
         p(1) = q(q6_idx_);
-        return !point_inside_polygon(q);
+        bool collision = !point_inside_polygon(p);
+        return collision;
     }
 
     bool VelmaQ5Q6CollisionChecker::point_inside_polygon(const Eigen::VectorXd &p) const {
@@ -152,6 +153,7 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
                 }
             }
         }
+
         return inside;
     }
 

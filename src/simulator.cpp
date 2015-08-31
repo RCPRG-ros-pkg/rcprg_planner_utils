@@ -113,10 +113,6 @@
 
             lower_limit[q_idx] = kin_model->getLowerLimit(q_idx);
             upper_limit[q_idx] = kin_model->getUpperLimit(q_idx);
-//            if (!col_model->getJointLimits( (*name_it), lower_limit[q_idx], upper_limit[q_idx] )) {
-//                std::cout << "ERROR: could not find joint with name " << (*name_it) << std::endl;
-//                return;
-//            }
             limit_range[q_idx] = 10.0 / 180.0 * 3.141592653589793;
             max_trq[q_idx] = 10.0;
         }
@@ -185,7 +181,9 @@
                 //
                 if (task_WCCr_ != NULL) {
                     task_WCCr_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCr_, N_WCCr_);
+                    //task_WCCr_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCr_, N_WCCr_, markers_pub, &m_id);   // visual debug
                     if (task_WCCr_->inCollision()) {
+                        //std::cout << "collision task_WCCr " << q_(6) << " " << q_(7) << std::endl;
                         in_collision_ = true;
                     }
                 }
@@ -193,6 +191,7 @@
                 if (task_WCCl_ != NULL) {
                     task_WCCl_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCl_, N_WCCl_);
                     if (task_WCCl_->inCollision()) {
+                        //std::cout << "collision task_WCCl" << std::endl;
                         in_collision_ = true;
                     }
                 }
@@ -204,6 +203,7 @@
                 self_collision::getCollisionPairs(col_model_, links_fk_, activation_dist_, link_collisions);
                 for (std::vector<self_collision::CollisionInfo>::const_iterator it = link_collisions.begin(); it != link_collisions.end(); it++) {
                     if ( it->dist <= 0.0 ) {
+                        //std::cout << "collision task_COL" << std::endl;
                         in_collision_ = true;
                         break;
                     }
@@ -255,8 +255,8 @@
                 // simulate one step
                 Eigen::VectorXd prev_ddq(ddq_), prev_dq(dq_);
                 dyn_model_->accel(ddq_, q_, dq_, torque_);
-//                float time_d = 0.005;
-                float time_d = 0.001;
+                float time_d = 0.005;
+//                float time_d = 0.001;
 
                 double max_f = 1.0;
                 for (int q_idx = 0; q_idx < ndof_; q_idx++) {

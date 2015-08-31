@@ -36,7 +36,7 @@ Task_COL::Task_COL(int ndof, double activation_dist, double Fmax, const boost::s
         activation_dist_(activation_dist),
         Fmax_(Fmax),
         kin_model_(kin_model),
-        af_(0.2 * activation_dist, 2.0 / activation_dist)
+        af_(0.2 * activation_dist, 4.0 / activation_dist)
 {
     for (int l_idx = 0; l_idx < col_model->getLinksCount(); l_idx++) {
         link_names_vec_.push_back(col_model->getLinkName(l_idx));
@@ -52,7 +52,7 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
             torque_COL.setZero();
             N_COL.setIdentity();
 
-            std::cout << "collision torques:" << std::endl;
+//            std::cout << "collision torques:" << std::endl;
 
             // sort the collisions by distance (ascending order)
 //            std::sort(link_collisions.begin(), link_collisions.end(), self_collision::compareCollisionInfoDist);
@@ -92,8 +92,8 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                 double K = 2.0 * Fmax_ / (activation_dist_ * activation_dist_);
 
                 // the mapping between motions along contact normal and the Cartesian coordinates
-                KDL::Vector e1 = n1_L1;
-                KDL::Vector e2 = n2_L2;
+                KDL::Vector e1 = KDL::Frame(T_B_L1.M) * n1_L1;
+                KDL::Vector e2 = KDL::Frame(T_B_L2.M) * n2_L2;
                 Eigen::VectorXd Jd1(3), Jd2(3);
                 for (int i = 0; i < 3; i++) {
                     Jd1[i] = e1[i];
@@ -144,20 +144,17 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                 double Mdij_inv = (Jcol * invI * Jcol.transpose())(0,0);
 
                 double D = 2.0 * 0.7 * sqrt(Mdij_inv * K);  // sqrt(K/M)
+
+                // damping is disabled
                 Eigen::VectorXd d_torque = Jcol.transpose() * (-Frep);// - D * ddij);
-//                torque_COL += (N_PREV * N_COL).transpose() * d_torque;
+                torque_COL += (N_PREV * N_COL).transpose() * d_torque;
+/*
                 std::cout << "t:  " << d_torque.transpose() << std::endl;
                 std::cout << "j1: " << jac1 << std::endl;
                 std::cout << "j2: " << jac2 << std::endl;
-                torque_COL += d_torque;
+*/
+//                torque_COL += d_torque;
                 N_COL = N_COL * Ncol12;
-
-                markers_pub->publish();
-
-                ros::spinOnce();
-                ros::Duration(1.0).sleep();
-
-                getchar();
             }
 
             if (markers_pub != NULL) {

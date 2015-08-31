@@ -37,9 +37,9 @@
         ndof_(ndof),
         q5_idx_(q5_idx),
         q6_idx_(q6_idx),
-        d0_(20.0/180.0*3.1415),
+        d0_(10.0/180.0*3.1415),
         in_collision_(false),
-        af_(0.1 * d0_, 4.0 / d0_),
+        af_(0.3 * d0_, 4.0 / d0_),
         cc_(q5_idx, q6_idx, d0_, inverted)
     {
     }
@@ -47,10 +47,15 @@
     Task_WCC::~Task_WCC() {
     }
 
-    void Task_WCC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub) {
+    void Task_WCC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub, int *m_id) {
 
             torque.setZero();
             N.setIdentity();
+
+            if (markers_pub != NULL) {
+                *m_id = cc_.visualizeBorder(markers_pub, *m_id);
+                *m_id = markers_pub->addSinglePointMarker(*m_id, KDL::Vector(q(q5_idx_), q(q6_idx_), 0), 0, 1, 0, 1, 0.03, "world");
+            }
 
             if (cc_.inCollision(q)) {
                 in_collision_ = true;
@@ -60,26 +65,19 @@
                 in_collision_ = false;
             }
 
-//            KDL::Vector pt(q(q5_idx_), q(q6_idx_), 0);
-            int m_id = 2000;
-
-            int min_idx;// = -1;
-            int min_type;// = -1;
-            double min_dist;// = d0_;
+            int min_idx;
+            int min_type;
+            double min_dist;
             Eigen::VectorXd min_v(2);
 
             bool found = cc_.getMinDistance(q, min_v, min_dist, min_idx, min_type);
 
             if (markers_pub != NULL) {
-                m_id = cc_.visualizeBorder(markers_pub, m_id);
                 if (found) {
-                    m_id = cc_.visualizeRegion(markers_pub, m_id, min_idx, min_type);
-                    m_id = markers_pub->addVectorMarker(m_id, KDL::Vector(q(q5_idx_), q(q6_idx_), 0), KDL::Vector(q(q5_idx_)+min_v(0), q(q6_idx_)+min_v(1), 0), 0, 1, 0, 1, 0.02, "world");
+                    *m_id = cc_.visualizeRegion(markers_pub, *m_id, min_idx, min_type);
+                    *m_id = markers_pub->addVectorMarker(*m_id, KDL::Vector(q(q5_idx_), q(q6_idx_), 0), KDL::Vector(q(q5_idx_)+min_v(0), q(q6_idx_)+min_v(1), 0), 0, 1, 0, 1, 0.02, "world");
                 }
-                else {
-                    m_id = markers_pub->addSinglePointMarker(m_id, KDL::Vector(q(q5_idx_), q(q6_idx_), 0), 0, 1, 0, 1, 0.03, "world");
-                }
-                markers_pub->addEraseMarkers(m_id, m_id+100);
+                markers_pub->addEraseMarkers(*m_id, *m_id+100);
             }
 
             if (!found) {
@@ -96,7 +94,7 @@
                 depth = 0.0;
             }
 
-            double Fmax_ = 1.0;
+            double Fmax_ = 50.0;
             double f = depth / d0_;
             double Frep = Fmax_ * f * f;
             double K = 2.0 * Fmax_ / (d0_ * d0_);
