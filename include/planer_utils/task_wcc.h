@@ -50,6 +50,9 @@ public:
     bool inCollision() const;
 
     bool getMinDistance(const Eigen::VectorXd &p, double d0, Eigen::VectorXd &min_v, double &min_dist, int &min_idx, int &min_type) const;
+
+    int getActivationCount() const;
+
     int visualizeBorder(MarkerPublisher *markers_pub, int m_id) const;
     int visualizeRegion(MarkerPublisher *markers_pub, int m_id, int min_idx, int min_type) const;
 
@@ -59,6 +62,7 @@ protected:
     int q5_idx_, q6_idx_;
 
     double d0_;
+    double activation_;
     bool in_collision_;
 
     VelmaQ5Q6CollisionChecker cc_;

@@ -45,6 +45,7 @@ public:
     ~ReachabilityMap();
 
     void generate(const boost::shared_ptr<KinematicModel> &kin_model, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::string &effector_name, int ndof, const Eigen::VectorXd &lower_limit, const Eigen::VectorXd &upper_limit);
+    void generateForArm(const boost::shared_ptr<KinematicModel> &kin_model, const std::string &base_name, const std::string &effector_name);
     void generate(const Eigen::VectorXd &lower_bound, const Eigen::VectorXd &upper_bound);
 
     void clear();
@@ -74,6 +75,7 @@ protected:
     std::vector<int > r_map_;
     std::vector<int > p_map_;
     std::vector<int > steps_;
+    std::vector<std::list<std::pair<KDL::Rotation, Eigen::VectorXd > > > r_map_rot_;
 };
 
 #endif  // REACHABILITY_MAP_H__

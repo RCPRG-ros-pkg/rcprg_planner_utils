@@ -48,6 +48,8 @@ public:
     void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, const std::vector<KDL::Frame > &links_fk, const Eigen::MatrixXd &N_PREV,
                     std::vector<self_collision::CollisionInfo> &link_collisions, Eigen::VectorXd &torque_COL, Eigen::MatrixXd &N_COL, MarkerPublisher *markers_pub=NULL, int m_id=0);
 
+    int getActivationCount() const;
+
 protected:
     int ndof_;
     double activation_dist_;

@@ -144,6 +144,63 @@
         }
     }
 
+    void ReachabilityMap::generateForArm(const boost::shared_ptr<KinematicModel> &kin_model, const std::string &base_name, const std::string &effector_name) {
+        std::list<Eigen::VectorXd > ep_B_list;
+        for (int dim_idx = 0; dim_idx < dim_; dim_idx++) {
+            ep_min_(dim_idx) = 1000000.0;
+            ep_max_(dim_idx) = -1000000.0;
+        }
+
+        Eigen::VectorXd tmp_q(kin_model->getDofCount());
+        for (int i = 0; i < 1000000; i++) {
+            for (int q_idx = 0; q_idx < kin_model->getDofCount(); q_idx++) {
+                tmp_q(q_idx) = randomUniform(kin_model->getLowerLimit(q_idx), kin_model->getUpperLimit(q_idx));
+            }
+
+            KDL::Frame T_W_A, T_W_E;
+            kin_model->calculateFk(T_W_A, base_name, tmp_q);
+            kin_model->calculateFk(T_W_E, effector_name, tmp_q);
+
+            KDL::Frame T_A_E = T_W_A.Inverse() * T_W_E;
+
+            Eigen::VectorXd x(dim_);
+            for (int dim_idx = 0; dim_idx < dim_; dim_idx++) {
+                x(dim_idx) = T_A_E.p[dim_idx];
+                if (ep_min_(dim_idx) > x(dim_idx)) {
+                    ep_min_(dim_idx) = x(dim_idx);
+                }
+                if (ep_max_(dim_idx) < x(dim_idx)) {
+                    ep_max_(dim_idx) = x(dim_idx);
+                }
+            }
+            ep_B_list.push_back(x);
+        }
+
+        steps_.clear();
+        int map_size = 1;
+        for (int dim_idx = 0; dim_idx < dim_; dim_idx++) {
+            int steps = static_cast<int>( ceil( ( ep_max_(dim_idx) - ep_min_(dim_idx) ) / voxel_size_ ) );
+            steps_.push_back( steps );
+            map_size *= steps;
+        }
+
+        r_map_.resize(map_size, 0);
+        p_map_.resize(map_size, 0);
+//        r_map_rot_.resize(map_size, 0);
+
+        max_value_ = 0;
+        for (std::list<Eigen::VectorXd >::const_iterator it = ep_B_list.begin(); it != ep_B_list.end(); it++) {
+            int idx = getIndex( (*it) );
+            if (idx < 0) {
+                std::cout << "ERROR: ReachabilityMap::generate: idx < 0" << std::endl;
+            }
+            r_map_[idx]++;
+            if (r_map_[idx] > max_value_) {
+                max_value_ = r_map_[idx];
+            }
+        }
+    }
+
     void ReachabilityMap::generate(const Eigen::VectorXd &lower_bound, const Eigen::VectorXd &upper_bound) {
         ep_min_ = lower_bound;
         ep_max_ = upper_bound;
@@ -189,6 +246,9 @@
         }
         max_value_ = 0;
     }
+
+//    void ReachabilityMap::createDistanceMap(const Eigen::VectorXd &origin) {
+//    }
 
     void ReachabilityMap::getNeighbourIndices(const std::vector<int> &d, std::list<int> &n_indices) {
         n_indices.clear();

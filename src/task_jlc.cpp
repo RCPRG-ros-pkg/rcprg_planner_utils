@@ -44,7 +44,7 @@
         J_JLC_(q_length_, q_length_),
         tmpNN_(q_length_, q_length_),
         excluded_q_idx_(excluded_q_idx),
-        af_(0.1, 4.0)
+        af_(0.1, 2.0)
     {
 //        for (int q_idx = 0; q_idx < q_length_; q_idx++) {
 //            af_vec_.push_back( ActivationFunction(limit_range(q_idx), 4.0/limit_range(q_idx)) );
@@ -122,6 +122,16 @@
             J_JLC_ = activation_JLC_.asDiagonal();
             N = Eigen::MatrixXd::Identity(q_length_, q_length_) - (J_JLC_.transpose() * J_JLC_);
     }
+
+int Task_JLC::getActivationCount() const {
+    int count = 0;
+    for (int q_idx = 0; q_idx < q_length_; q_idx++) {
+        if (activation_JLC_[q_idx] > 0.001) {
+            count++;
+        }
+    }
+    return count;
+}
 
 int Task_JLC::visualize(MarkerPublisher *markers_pub, int m_id, const boost::shared_ptr<KinematicModel> &kin_model, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::vector<KDL::Frame > &links_fk) const {
     for (int q_idx = 0; q_idx < q_length_; q_idx++) {

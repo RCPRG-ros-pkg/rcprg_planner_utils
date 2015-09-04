@@ -36,7 +36,7 @@ Task_COL::Task_COL(int ndof, double activation_dist, double Fmax, const boost::s
         activation_dist_(activation_dist),
         Fmax_(Fmax),
         kin_model_(kin_model),
-        af_(0.2 * activation_dist, 4.0 / activation_dist)
+        af_(0.2 * activation_dist, 2.0 / activation_dist)
 {
     for (int l_idx = 0; l_idx < col_model->getLinksCount(); l_idx++) {
         link_names_vec_.push_back(col_model->getLinkName(l_idx));
@@ -121,7 +121,7 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
 
                 double activation = 1.0 - af_.func_Ndes(it->dist);
 
-                if (activation > 0.1) {
+                if (activation > 0.001) {
                     constraints_count_++;
                 }
 
@@ -147,7 +147,8 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
 
                 // damping is disabled
                 Eigen::VectorXd d_torque = Jcol.transpose() * (-Frep);// - D * ddij);
-                torque_COL += (N_PREV * N_COL).transpose() * d_torque;
+//                torque_COL += (N_PREV * N_COL).transpose() * d_torque;
+                torque_COL += (N_PREV).transpose() * d_torque;
 /*
                 std::cout << "t:  " << d_torque.transpose() << std::endl;
                 std::cout << "j1: " << jac1 << std::endl;
@@ -161,4 +162,8 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
                 markers_pub->addEraseMarkers(m_id, m_id+100);
             }
     }
+
+int Task_COL::getActivationCount() const {
+    return constraints_count_;
+}
 

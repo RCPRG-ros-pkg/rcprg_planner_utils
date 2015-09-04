@@ -39,8 +39,9 @@
         q6_idx_(q6_idx),
         d0_(10.0/180.0*3.1415),
         in_collision_(false),
-        af_(0.3 * d0_, 4.0 / d0_),
-        cc_(q5_idx, q6_idx, d0_, inverted)
+        af_(0.2 * d0_, 2.0 / d0_),
+        cc_(q5_idx, q6_idx, d0_, inverted),
+        activation_(0.0)
     {
     }
 
@@ -110,9 +111,9 @@
             // calculate relative velocity between points (1 dof)
             double ddij = (J * dq)(0,0);
 
-            double activation = 1.0 - af_.func_Ndes(min_dist);
+            activation_ = 1.0 - af_.func_Ndes(min_dist);
 
-            N = Eigen::MatrixXd::Identity(ndof_, ndof_) - (J.transpose() * activation * J);
+            N = Eigen::MatrixXd::Identity(ndof_, ndof_) - (J.transpose() * activation_ * J);
 
             // calculate collision mass (1 dof)
             double Mdij_inv = (J * invI * J.transpose())(0,0);
@@ -121,6 +122,13 @@
             Eigen::VectorXd d_torque = J.transpose() * (Frep - D * ddij);
             torque += d_torque;
     }
+
+int Task_WCC::getActivationCount() const {
+    if (activation_ > 0.001) {
+        return 1;
+    }
+    return 0;
+}
 
     bool Task_WCC::inCollision() const {
         return in_collision_;

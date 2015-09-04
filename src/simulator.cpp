@@ -71,7 +71,7 @@
         }
 
         double Kc_lin = 200.0;
-        double Kc_rot = 20.0;
+        double Kc_rot = 0.2;
         if (ndim_ == 3) {
             Kc_[0] = Kc_lin;
             Kc_[1] = Kc_lin;
@@ -251,6 +251,8 @@
                 torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
 //                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_HAND_);
 
+
+//                std::cout << "JLC: " << task_JLC_->getActivationCount() << " WCCr: " << task_WCCr_->getActivationCount() << " WWCl: " << task_WCCl_->getActivationCount() << " COL: " << task_COL_->getActivationCount() << std::endl;
 
                 // simulate one step
                 Eigen::VectorXd prev_ddq(ddq_), prev_dq(dq_);

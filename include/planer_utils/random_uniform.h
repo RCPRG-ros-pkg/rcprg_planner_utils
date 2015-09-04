@@ -38,5 +38,7 @@ double randomUniform(double min, double max);
 
 void randomUnitQuaternion(Eigen::VectorXd &quat);
 
+void randomUnitSphere(Eigen::VectorXd &sp);
+
 #endif  // RANDOM_UNIFORM_H__
 
