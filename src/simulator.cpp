@@ -34,7 +34,8 @@
     DynamicsSimulatorHandPose::DynamicsSimulatorHandPose(int ndof, int ndim, const std::string &effector_name, const boost::shared_ptr<self_collision::CollisionModel> &col_model,
                         const boost::shared_ptr<KinematicModel> &kin_model,
                         const boost::shared_ptr<DynamicModel > &dyn_model,
-                        const std::vector<std::string > &joint_names, const Eigen::VectorXd &max_q) :
+                        const std::vector<std::string > &joint_names, const Eigen::VectorXd &q_eq, const Eigen::VectorXd &max_q,
+                        boost::function<KDL::Twist(const KDL::Frame &x, const KDL::Frame &y)> pose_diff_function) :
         ndof_(ndof),
         ndim_(ndim),
         effector_name_(effector_name),
@@ -46,7 +47,7 @@
         kin_model_(kin_model),
         dyn_model_(dyn_model),
         links_fk_(col_model->getLinksCount()),
-        activation_dist_(0.04),
+        activation_dist_(0.05),
         torque_JLC_( Eigen::VectorXd::Zero(ndof_) ),
         N_JLC_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
         torque_WCCr_( Eigen::VectorXd::Zero(ndof_) ),
@@ -57,21 +58,29 @@
         N_COL_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
         torque_HAND_( Eigen::VectorXd::Zero(ndof_) ),
         N_HAND_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
+        torque_JOINT_( Eigen::VectorXd::Zero(ndof_) ),
+        N_JOINT_( Eigen::MatrixXd::Identity(ndof_, ndof_) ),
         Kc_(ndim_),
         Dxi_(ndim_),
+        Kc_JOINT_(ndof_),
+        Dxi_JOINT_(ndof_),
         r_HAND_diff_(ndim_),
         in_collision_(false),
-        max_q_(max_q)
+        max_q_(max_q),
+        q_eq_(q_eq),
+        pose_diff_function_(pose_diff_function)
     {
         for (int q_idx = 0; q_idx < ndof; q_idx++) {
             q_[q_idx] = 0.0;
             dq_[q_idx] = 0.0;
             ddq_[q_idx] = 0.0;
             torque_[q_idx] = 0.0;
+            Kc_JOINT_[q_idx] = 10.0;
+            Dxi_JOINT_[q_idx] = 0.7;
         }
 
         double Kc_lin = 200.0;
-        double Kc_rot = 0.2;
+        double Kc_rot = 20.0;
         if (ndim_ == 3) {
             Kc_[0] = Kc_lin;
             Kc_[1] = Kc_lin;
@@ -134,12 +143,13 @@
         }
         task_JLC_.reset( new Task_JLC(lower_limit, upper_limit, limit_range, max_trq, jlc_excluded_q_idx) );
 
-
         task_COL_.reset( new Task_COL(ndof_, activation_dist_, 50.0, kin_model_, col_model_) );
         task_HAND_.reset( new Task_HAND(ndof_, ndim_) );
 
         J_r_HAND_6_.resize(6, ndof_);
         J_r_HAND_.resize(ndim_, ndof_);
+
+        task_JOINT_.reset( new Task_JOINT(ndof_) );
     }
 
     void DynamicsSimulatorHandPose::setState(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::VectorXd &ddq) {
@@ -247,17 +257,28 @@
                     task_HAND_->compute(r_HAND_diff_, Kc_, Dxi_, J_r_HAND_6_, dq_, dyn_model_->getInvM(), torque_HAND_, N_HAND_);
                 }
 
+                //
+                // joint impedance
+                //
+                Eigen::VectorXd q_diff = q_eq_ - q_;
+                task_JOINT_->compute(q_diff, Kc_JOINT_, Dxi_JOINT_, dq_, dyn_model_->getM(), torque_JOINT_, N_JOINT_);
+
 //                torque_ = torque_JLC_ + N_JLC_.transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
-                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
-//                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_HAND_);
+//                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
+                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_ + N_HAND_.transpose() * (torque_JOINT_))));
+//                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_) * (torque_COL_ + (N_COL_ * (torque_HAND_ + N_HAND_ * (torque_JOINT_))));
+//                torque_.noalias() = torque_JLC_ + N_JLC_.transpose() * (torque_WCCr_ + N_WCCr_.transpose() * (torque_WCCl_ + N_WCCl_.transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)))));
+//                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_HAND_ + N_HAND_ * (torque_JOINT_));
 
 
+//                std::cout << torque_COL_.transpose() << std::endl;
 //                std::cout << "JLC: " << task_JLC_->getActivationCount() << " WCCr: " << task_WCCr_->getActivationCount() << " WWCl: " << task_WCCl_->getActivationCount() << " COL: " << task_COL_->getActivationCount() << std::endl;
 
                 // simulate one step
                 Eigen::VectorXd prev_ddq(ddq_), prev_dq(dq_);
                 dyn_model_->accel(ddq_, q_, dq_, torque_);
-                float time_d = 0.005;
+//                float time_d = 0.005;
+                float time_d = 0.001;
 //                float time_d = 0.001;
 
                 double max_f = 1.0;
@@ -283,11 +304,16 @@
     void DynamicsSimulatorHandPose::oneStep(MarkerPublisher *markers_pub, int m_id) {
         KDL::Frame r_HAND_current;
         kin_model_->calculateFk(r_HAND_current, effector_name_, q_);
-        KDL::Twist diff = KDL::diff(r_HAND_current, r_HAND_target_, 1.0);
+//        KDL::Twist diff = KDL::diff(r_HAND_current, r_HAND_target_, 1.0);
+        KDL::Twist diff = pose_diff_function_(r_HAND_current, r_HAND_target_);
         oneStep(diff, markers_pub, m_id);
     }
 
     bool DynamicsSimulatorHandPose::inCollision() const {
         return in_collision_;
+    }
+
+    void DynamicsSimulatorHandPose::updateMetric(boost::function<KDL::Twist(const KDL::Frame &, const KDL::Frame &)> pose_diff_function) {
+        pose_diff_function_ = pose_diff_function;
     }
 

@@ -39,7 +39,7 @@
         q6_idx_(q6_idx),
         d0_(10.0/180.0*3.1415),
         in_collision_(false),
-        af_(0.2 * d0_, 2.0 / d0_),
+        af_(0.2 * d0_, 4.0 / d0_),
         cc_(q5_idx, q6_idx, d0_, inverted),
         activation_(0.0)
     {

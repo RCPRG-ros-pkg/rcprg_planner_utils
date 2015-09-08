@@ -47,6 +47,7 @@
 #include "planer_utils/task_hand.h"
 #include "planer_utils/task_jlc.h"
 #include "planer_utils/task_wcc.h"
+#include "planer_utils/task_joint.h"
 #include "planer_utils/marker_publisher.h"
 
 class DynamicsSimulatorHandPose {
@@ -68,6 +69,7 @@ protected:
     boost::shared_ptr<Task_HAND> task_HAND_;
     boost::shared_ptr<Task_WCC> task_WCCr_;
     boost::shared_ptr<Task_WCC> task_WCCl_;
+    boost::shared_ptr<Task_JOINT> task_JOINT_;
 
     Eigen::VectorXd torque_JLC_;
     Eigen::MatrixXd N_JLC_;
@@ -79,24 +81,33 @@ protected:
     Eigen::MatrixXd N_COL_;
     Eigen::VectorXd torque_HAND_;
     Eigen::MatrixXd N_HAND_;
+    Eigen::VectorXd torque_JOINT_;
+    Eigen::MatrixXd N_JOINT_;
 
     Eigen::VectorXd Kc_;
     Eigen::VectorXd Dxi_;
+    Eigen::VectorXd Kc_JOINT_;
+    Eigen::VectorXd Dxi_JOINT_;
     Eigen::VectorXd r_HAND_diff_;
 
     bool in_collision_;
     Eigen::VectorXd max_q_;
+    Eigen::VectorXd q_eq_;
 
     std::vector<KDL::Frame > links_fk_;
     KDL::Frame r_HAND_target_;
     KinematicModel::Jacobian J_r_HAND_6_, J_r_HAND_;
     std::string effector_name_;
+
+    boost::function<KDL::Twist(const KDL::Frame &, const KDL::Frame &)> pose_diff_function_;
+
 public:
 
     DynamicsSimulatorHandPose(int ndof, int ndim, const std::string &effector_name, const boost::shared_ptr<self_collision::CollisionModel> &col_model,
                         const boost::shared_ptr<KinematicModel> &kin_model,
                         const boost::shared_ptr<DynamicModel > &dyn_model,
-                        const std::vector<std::string > &joint_names, const Eigen::VectorXd &max_q);
+                        const std::vector<std::string > &joint_names, const Eigen::VectorXd &q_eq, const Eigen::VectorXd &max_q,
+                        boost::function<KDL::Twist(const KDL::Frame &, const KDL::Frame &)> pose_diff_function = boost::bind(static_cast<KDL::Twist (*)(const KDL::Frame &, const KDL::Frame &, double)>(&KDL::diff), _1, _2, 1.0));
 
     void setState(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::VectorXd &ddq);
     void getState(Eigen::VectorXd &q, Eigen::VectorXd &dq, Eigen::VectorXd &ddq);
@@ -104,6 +115,8 @@ public:
     void oneStep(const KDL::Twist &diff, MarkerPublisher *markers_pub=NULL, int m_id=0);
     void oneStep(MarkerPublisher *markers_pub=NULL, int m_id=0);
     bool inCollision() const;
+
+    void updateMetric(boost::function<KDL::Twist(const KDL::Frame &, const KDL::Frame &)> pose_diff_function);
 };
 
 #endif  // SIMULATOR_H__

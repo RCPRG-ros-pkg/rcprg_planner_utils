@@ -44,7 +44,7 @@
         J_JLC_(q_length_, q_length_),
         tmpNN_(q_length_, q_length_),
         excluded_q_idx_(excluded_q_idx),
-        af_(0.1, 2.0)
+        af_(0.2, 10.0)
     {
 //        for (int q_idx = 0; q_idx < q_length_; q_idx++) {
 //            af_vec_.push_back( ActivationFunction(limit_range(q_idx), 4.0/limit_range(q_idx)) );

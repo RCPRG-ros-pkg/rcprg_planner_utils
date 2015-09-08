@@ -40,6 +40,13 @@
 
 class ReachabilityMap {
 public:
+    class GradientInfo {
+    public:
+        KDL::Vector direction_;
+        double value_;
+        bool valid_;
+    };
+
     ReachabilityMap(double voxel_size, int dim);
 
     ~ReachabilityMap();
@@ -63,9 +70,25 @@ public:
 
     double getMaxValue() const;
 
+    bool createDistanceMap(const KDL::Vector &origin, boost::function<bool(const KDL::Vector &x)> collision_func, const KDL::Vector &lower_bound, const KDL::Vector &upper_bound);
+    bool getDistnace(const KDL::Vector &x, double &distance) const;
+    bool getGradient(const KDL::Vector &x, KDL::Vector &gradient) const;
+    bool getAllGradients(const KDL::Vector &x, std::vector<GradientInfo > &gradients) const;
+
+    const KDL::Vector &getOrigin() const;
+
 protected:
 
+    void recurenceGrow(const std::list<Eigen::Vector3i > &states_to_expand, boost::function<bool(const KDL::Vector &x)> collision_func, const KDL::Vector &lower_bound, const KDL::Vector &upper_bound);
     int getIndex(const Eigen::VectorXd &x) const;
+    int getIndex(const KDL::Vector &x) const;
+    int getIndexDim(double x, int dim_idx) const;
+    int composeIndex(const Eigen::Vector3i &i) const;
+    int composeIndex(int ix, int iy, int iz) const;
+    void decomposeIndex(int idx, int &ix, int &iy, int &iz) const;
+    void getIndexCenter(int ix, int iy, int iz, KDL::Vector &pt) const;
+    bool collisionFreeLine(int ix1, int iy1, int iz1, int ix2, int iy2, int iz2) const;
+    bool collisionFreeLine(KDL::Vector pt1, int ix2, int iy2, int iz2) const;
 
     double voxel_size_;
     int dim_;
@@ -76,6 +99,10 @@ protected:
     std::vector<int > p_map_;
     std::vector<int > steps_;
     std::vector<std::list<std::pair<KDL::Rotation, Eigen::VectorXd > > > r_map_rot_;
+
+    std::vector<double > d_map_;
+    std::set<int > bounduary_set_;
+    KDL::Vector origin_;
 };
 
 #endif  // REACHABILITY_MAP_H__

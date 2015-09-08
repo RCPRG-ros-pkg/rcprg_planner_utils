@@ -83,7 +83,7 @@
             double max_factor = 1.0;
 
             for (int dim_idx=0; dim_idx < dim_; dim_idx++) {
-                double factor = wrench_(dim_idx) / max_wrench_(dim_idx);
+                double factor = fabs(wrench_(dim_idx)) / max_wrench_(dim_idx);
                 if (factor > max_factor) {
                     max_factor = factor;
                 }
