@@ -46,6 +46,7 @@ public:
 
     int addLineListMarker(int m_id, const std::vector<KDL::Vector > &pts, const KDL::Frame &fr, double r, double g, double b, double a, double size, const std::string &frame_id);
     int addSinglePointMarker(int m_id, const KDL::Vector &pos, double r, double g, double b, double a, double size, const std::string &frame_id);
+    int addSinglePointMarkerCube(int m_id, const KDL::Vector &pos, double r, double g, double b, double a, double size_x, double size_y, double size_z, const std::string &frame_id);
     int addVectorMarker(int m_id, const KDL::Vector &v1, const KDL::Vector &v2, double r, double g, double b, double a, double size, const std::string &frame_id);
     int addCapsule(int m_id, const KDL::Frame &fr, double length, double radius, const std::string &frame_id);
     void addEraseMarkers(int from, int to);

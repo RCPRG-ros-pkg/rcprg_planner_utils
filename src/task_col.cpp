@@ -36,7 +36,7 @@ Task_COL::Task_COL(int ndof, double activation_dist, double Fmax, const boost::s
         activation_dist_(activation_dist),
         Fmax_(Fmax),
         kin_model_(kin_model),
-        af_(0.5 * activation_dist, 10.0 / activation_dist)
+        af_(0.2 * activation_dist, 4.0 / activation_dist)
 {
     for (int l_idx = 0; l_idx < col_model->getLinksCount(); l_idx++) {
         link_names_vec_.push_back(col_model->getLinkName(l_idx));
