@@ -313,7 +313,7 @@
         }
         generate(l_bound, u_bound);
 
-        std::cout << "ReachabilityMap::createDistanceMap: distance map size: " << d_map_.size() << std::endl;
+//        std::cout << "ReachabilityMap::createDistanceMap: distance map size: " << d_map_.size() << std::endl;
 
         for (int idx = 0; idx < d_map_.size(); idx++) {
             d_map_[idx] = -1.0;
@@ -361,7 +361,7 @@
                 }
             }
         }
-        std::cout << "bounduary_set_.size() " << bounduary_set_.size() << std::endl;
+//        std::cout << "bounduary_set_.size() " << bounduary_set_.size() << std::endl;
 /*
         // increase the value for the bounduary points
         // THIS DOES NOT WORK!
@@ -490,7 +490,7 @@
         }
 
         if (min_ix == -1) {
-            std::cout << "ReachabilityMap::getGradient: could not find gradient, min_value: " << min_value << std::endl;
+//            std::cout << "ReachabilityMap::getGradient: could not find gradient, min_value: " << min_value << std::endl;
             return false;
         }
         KDL::Vector min_pt, pt;

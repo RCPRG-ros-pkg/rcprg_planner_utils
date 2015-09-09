@@ -278,8 +278,8 @@
                 Eigen::VectorXd prev_ddq(ddq_), prev_dq(dq_);
                 dyn_model_->accel(ddq_, q_, dq_, torque_);
 //                float time_d = 0.005;
+//                float time_d = 0.005;
                 float time_d = 0.001;
-//                float time_d = 0.001;
 
                 double max_f = 1.0;
                 for (int q_idx = 0; q_idx < ndof_; q_idx++) {
