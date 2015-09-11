@@ -77,8 +77,19 @@ public:
 
     const KDL::Vector &getOrigin() const;
 
+    void printDistanceMap() const;
+
 protected:
 
+    class Derivatives {
+    public:
+        double dx_, dy_, dz_;
+        double ddx_, ddy_, ddz_;
+    };
+
+    void tricubic_get_coeff(double a[64], int ix, int iy, int iz) const;
+
+    bool getGradient(int idx, KDL::Vector &gradient) const;
     void recurenceGrow(const std::list<Eigen::Vector3i > &states_to_expand, boost::function<bool(const KDL::Vector &x)> collision_func, const KDL::Vector &lower_bound, const KDL::Vector &upper_bound);
     int getIndex(const Eigen::VectorXd &x) const;
     int getIndex(const KDL::Vector &x) const;
@@ -101,6 +112,7 @@ protected:
     std::vector<std::list<std::pair<KDL::Rotation, Eigen::VectorXd > > > r_map_rot_;
 
     std::vector<double > d_map_;
+    std::vector<Derivatives > dd_map_;
     std::set<int > bounduary_set_;
     KDL::Vector origin_;
 };

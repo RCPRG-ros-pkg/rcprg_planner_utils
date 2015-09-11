@@ -74,6 +74,8 @@
             KDL::Frame T_B_L = T[(*l_it)->index_];
             for (self_collision::Link::VecPtrCollision::const_iterator it = (*l_it)->collision_array.begin(); it != (*l_it)->collision_array.end(); it++) {
                 KDL::Frame T_B_O = T_B_L * (*it)->origin;
+                double cr, cg, cb, ca;
+                (*it)->geometry->getColor(cr, cg, cb, ca);
                 if ((*it)->geometry->getType() == self_collision::Geometry::CONVEX) {
                     self_collision::Convex *convex = static_cast<self_collision::Convex* >((*it)->geometry.get());
 
@@ -95,21 +97,21 @@
 		                    }
 		                    poly_idx += points_in_poly+1;
 	                    }
-                        m_id = markers_pub.addLineListMarker(m_id, pts, T_B_O, 0, 1, 0, 1, 0.02, "world");
+                        m_id = markers_pub.addLineListMarker(m_id, pts, T_B_O, cr, cg, cb, ca, 0.02, "world");
                     }
                     else if (convex->visualisation_hint_.find("box") == 0) {
                         double dx, dy, dz;
                         std::istringstream(convex->visualisation_hint_.substr(4)) >> dx >> dy >> dz;
-                        m_id = markers_pub.addSinglePointMarkerCube(m_id, T_B_O.p, 0, 1, 0, 0.5, dx, dy, dz, "world");
+                        m_id = markers_pub.addSinglePointMarkerCube(m_id, T_B_O.p, cr, cg, cb, ca, dx, dy, dz, "world");
                     }
                 }
                 else if ((*it)->geometry->getType() == self_collision::Geometry::SPHERE) {
                     self_collision::Sphere *sphere = static_cast<self_collision::Sphere* >((*it)->geometry.get());
-                    m_id = markers_pub.addSinglePointMarker(m_id, T_B_O.p, 0, 1, 0, 0.5, sphere->getRadius()*2, "world");
+                    m_id = markers_pub.addSinglePointMarker(m_id, T_B_O.p, cr, cg, cb, ca, sphere->getRadius()*2, "world");
                 }
                 else if ((*it)->geometry->getType() == self_collision::Geometry::CAPSULE) {
                     self_collision::Capsule *capsule = static_cast<self_collision::Capsule* >((*it)->geometry.get());
-                    m_id = markers_pub.addCapsule(m_id, T_B_O, capsule->getLength(), capsule->getRadius(), "world");
+                    m_id = markers_pub.addCapsule(m_id, T_B_O, cr, cg, cb, ca, capsule->getLength(), capsule->getRadius(), "world");
                 }
             }
         }
