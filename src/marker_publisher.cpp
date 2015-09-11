@@ -188,7 +188,7 @@ int MarkerPublisher::addVectorMarker(int m_id, const KDL::Vector &v1, const KDL:
     return m_id + 1;
 }
 
-int MarkerPublisher::addCapsule(int m_id, const KDL::Frame &fr, double length, double radius, const std::string &frame_id) {
+int MarkerPublisher::addCapsule(int m_id, const KDL::Frame &fr, double r, double g, double b, double a, double length, double radius, const std::string &frame_id) {
 
 	KDL::Vector zero;
 	KDL::Vector v(0,0,length);
@@ -213,10 +213,10 @@ int MarkerPublisher::addCapsule(int m_id, const KDL::Frame &fr, double length, d
 	marker.scale.x = radius * 2.0;
 	marker.scale.y = radius * 2.0;
 	marker.scale.z = radius * 2.0;
-	marker.color.a = 0.5;
-	marker.color.r = 0.0;
-	marker.color.g = 1.0;
-	marker.color.b = 0.0;
+	marker.color.a = a;
+	marker.color.r = r;
+	marker.color.g = g;
+	marker.color.b = b;
 	marker_array_.markers.push_back(marker);
 
 	visualization_msgs::Marker marker2(marker);
