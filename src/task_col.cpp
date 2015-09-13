@@ -127,8 +127,8 @@ void Task_COL::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, cons
 
                 if (markers_pub != NULL) {
                     m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p2_B, 1, activation, activation, 1, 0.01, "world");
-                    m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p1_B - 0.03 * it->n1_B, 0, 1, 0, 1, 0.01, "world");
-                    m_id = markers_pub->addVectorMarker(m_id, it->p2_B, it->p2_B - 0.03 * it->n2_B, 0, 0, 1, 1, 0.01, "world");
+//                    m_id = markers_pub->addVectorMarker(m_id, it->p1_B, it->p1_B - 0.03 * it->n1_B, 0, 1, 0, 1, 0.01, "world");
+//                    m_id = markers_pub->addVectorMarker(m_id, it->p2_B, it->p2_B - 0.03 * it->n2_B, 0, 0, 1, 1, 0.01, "world");
                 }
 //                Eigen::JacobiSVD<Eigen::MatrixXd> svd(Jcol, Eigen::ComputeFullV);
 

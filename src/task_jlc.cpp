@@ -144,10 +144,11 @@ int Task_JLC::visualize(MarkerPublisher *markers_pub, int m_id, const boost::sha
             const KDL::Frame &T_B_L = links_fk[col_model->getLinkIndex(link_name)];
 
             if (activation_JLC_[q_idx] < 0.001) {
-                m_id = markers_pub->addVectorMarker(m_id, T_B_L * origin, T_B_L * (origin + 0.4 * axis), 0, 1, 0, 1, 0.01, "world");
+//                m_id = markers_pub->addVectorMarker(m_id, T_B_L * origin, T_B_L * (origin + 0.4 * axis), 0, 1, 0, 1, 0.01, "world");
             }
             else {
-                m_id = markers_pub->addVectorMarker(m_id, T_B_L * origin, T_B_L * (origin + 0.4 * axis), 1, activation_JLC_[q_idx], activation_JLC_[q_idx], 1, 0.01, "world");
+//                m_id = markers_pub->addVectorMarker(m_id, T_B_L * origin, T_B_L * (origin + 0.4 * axis), 1, activation_JLC_[q_idx], activation_JLC_[q_idx], 1, 0.01, "world");
+                m_id = markers_pub->addSinglePointMarker(m_id, T_B_L * origin, 0.9, 0, 0, 0.7, 0.2, "world");
             }
         }
     }
