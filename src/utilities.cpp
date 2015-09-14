@@ -171,3 +171,9 @@
         return length;
     }
 
+void printFrameKDL(const KDL::Frame &f) {
+    double qx, qy, qz, qw, px(f.p.x()), py(f.p.y()), pz(f.p.z());
+    f.M.GetQuaternion(qx, qy, qz, qw);
+    std::cout << "KDL::Frame(KDL::Rotation::Quaternion(" << qx << ", " << qy << ", " << qz << ", " << qw << "), KDL::Vector(" << px << ", " << py << ", " << pz << "))" << std::endl;
+}
+

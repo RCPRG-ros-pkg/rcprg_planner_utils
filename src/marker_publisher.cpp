@@ -244,7 +244,7 @@ int MarkerPublisher::addCapsule(int m_id, const KDL::Frame &fr, double r, double
 	if (length > 0.0001)
 		marker_array_.markers.push_back(marker3);
 
-	visualization_msgs::Marker marker4(marker);
+/*	visualization_msgs::Marker marker4(marker);
 	marker4.id = m_id+3;
 	marker4.type = visualization_msgs::Marker::SPHERE;
 	marker4.pose.position.x = fr.p.x();
@@ -258,7 +258,8 @@ int MarkerPublisher::addCapsule(int m_id, const KDL::Frame &fr, double r, double
 	marker4.color.g = 1.0;
 	marker4.color.b = 0.0;
 	marker_array_.markers.push_back(marker4);
-	return m_id + 4;
+*/
+	return m_id + 3;
 }
 
 void MarkerPublisher::addEraseMarkers(int from, int to)

@@ -39,10 +39,10 @@
         ndof_(ndof),
         ndim_(ndim),
         effector_name_(effector_name),
-        q_(ndof_),
-        dq_(ndof_),
-        ddq_(ndof_),
-        torque_(ndof_),
+        q_( Eigen::VectorXd::Zero(ndof_) ),
+        dq_( Eigen::VectorXd::Zero(ndof_) ),
+        ddq_( Eigen::VectorXd::Zero(ndof_) ),
+        torque_( Eigen::VectorXd::Zero(ndof_) ),
         col_model_(col_model),
         kin_model_(kin_model),
         dyn_model_(dyn_model),
@@ -71,10 +71,6 @@
         pose_diff_function_(pose_diff_function)
     {
         for (int q_idx = 0; q_idx < ndof; q_idx++) {
-            q_[q_idx] = 0.0;
-            dq_[q_idx] = 0.0;
-            ddq_[q_idx] = 0.0;
-            torque_[q_idx] = 0.0;
             Kc_JOINT_[q_idx] = 10.0;
             Dxi_JOINT_[q_idx] = 0.7;
         }
@@ -263,7 +259,7 @@
                 Eigen::VectorXd q_diff = q_eq_ - q_;
                 task_JOINT_->compute(q_diff, Kc_JOINT_, Dxi_JOINT_, dq_, dyn_model_->getM(), torque_JOINT_, N_JOINT_);
 
-//                torque_ = torque_JLC_ + N_JLC_.transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
+//                torque_.noalias() = torque_JLC_;// + N_JLC_.transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
 //                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_)));
                 torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_).transpose() * (torque_COL_ + (N_COL_.transpose() * (torque_HAND_ + N_HAND_.transpose() * (torque_JOINT_))));
 //                torque_.noalias() = (torque_JLC_ + torque_WCCr_ + torque_WCCl_) + (N_JLC_ * N_WCCr_ * N_WCCl_) * (torque_COL_ + (N_COL_ * (torque_HAND_ + N_HAND_ * (torque_JOINT_))));

@@ -52,6 +52,7 @@ void publishTransform(tf::TransformBroadcaster &br, const KDL::Frame &T_B_F, con
 int addRobotModelVis(MarkerPublisher &markers_pub, int m_id, const boost::shared_ptr<self_collision::CollisionModel> &col_model, const std::vector<KDL::Frame > &T);
 void getPointOnPath(const std::list<Eigen::VectorXd > &path, double f, Eigen::VectorXd &x);
 double getPathLength(const std::list<Eigen::VectorXd > &path);
+void printFrameKDL(const KDL::Frame &f);
 
 #endif  // UTILITIES_H__
 

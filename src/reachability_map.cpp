@@ -653,6 +653,7 @@ fptype ReachabilityMap::ip(list xyz){
         }
 
         if (getIndex(origin) < 0) {
+            std::cout << "ReachabilityMap::createDistanceMap: getIndex(origin) < 0" << std::endl;
             return false;
         }
 
@@ -1160,7 +1161,7 @@ fptype ReachabilityMap::ip(list xyz){
         int iy1 = iy0+1;
         int iz1 = iz0+1;
 
-        if (ix0 < 0 || iy0 < 0 || iz0 < 0 || ix1 >= steps_[0]-1 || iy1 >= steps_[1]-1 || iz1 >= steps_[2]-1) {
+        if (ix0 < 1 || iy0 < 1 || iz0 < 1 || ix1 >= steps_[0]-2 || iy1 >= steps_[1]-2 || iz1 >= steps_[2]-2) {
             return false;
         }
 
