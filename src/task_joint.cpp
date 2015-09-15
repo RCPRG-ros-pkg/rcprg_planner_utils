@@ -34,7 +34,7 @@
 Task_JOINT::Task_JOINT(int ndof, const std::set<int > &excluded_q_idx) :
     ndof_(ndof),
     activation_(ndof_),
-    k_(ndof_),
+//    k_(ndof_),
     k0_(ndof_),
     q_(ndof_, ndof_), d_(ndof_, ndof_),
     J_(ndof_, ndof_),
@@ -63,9 +63,15 @@ void Task_JOINT::compute(const Eigen::VectorXd &q_diff, const Eigen::VectorXd &K
                 else {
                     torque[q_idx] = Kc[q_idx] * q_diff[q_idx];
                 }
+                if (torque[q_idx] != torque[q_idx]) {
+                    std::cout << "Task_JOINT::compute: torque: " << torque.transpose() << std::endl;
+                    std::cout << "Task_JOINT::compute: q_diff: " << q_diff.transpose() << std::endl;
+                    std::cout << "Task_JOINT::compute: Kc: " << Kc.transpose() << std::endl;
+                    return;
+                }
             }
 
-            tmpNN_ = k_.asDiagonal();
+            tmpNN_ = Kc.asDiagonal();
             es_.compute(tmpNN_, I);
             q_ = es_.eigenvectors().inverse();
             k0_ = es_.eigenvalues();
@@ -76,6 +82,17 @@ void Task_JOINT::compute(const Eigen::VectorXd &q_diff, const Eigen::VectorXd &K
 
             torque.noalias() -= d_ * dq;
 
+            for (int q_idx = 0; q_idx < ndof_; q_idx++) {
+                if (torque[q_idx] != torque[q_idx]) {
+                    std::cout << "Task_JOINT::compute2: torque: " << torque.transpose() << std::endl;
+                    std::cout << "Task_JOINT::compute2: dq: " << dq.transpose() << std::endl;
+                    std::cout << "Task_JOINT::compute2: d_: " << d_ << std::endl;
+                    std::cout << "Task_JOINT::compute2: q_: " << q_ << std::endl;
+                    std::cout << "Task_JOINT::compute2: Dxi: " << Dxi << std::endl;
+                    std::cout << "Task_JOINT::compute2: tmpNN_: " << tmpNN_ << std::endl;
+                    return;
+                }
+            }
             // calculate jacobian (the activation function)
             J_ = activation_.asDiagonal();
             N = Eigen::MatrixXd::Identity(ndof_, ndof_) - (J_.transpose() * J_);

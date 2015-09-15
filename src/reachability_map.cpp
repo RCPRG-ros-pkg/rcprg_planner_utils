@@ -1025,7 +1025,7 @@ fptype ReachabilityMap::ip(list xyz){
 //*/
         return true;
     }
-
+/*
     bool ReachabilityMap::getDistnace(const KDL::Vector &x, double &distance) const {
         int idx = getIndex(x);
         if (idx < 0) {
@@ -1052,6 +1052,36 @@ fptype ReachabilityMap::ip(list xyz){
                 }
             }
         }
+        return true;
+    }
+*/
+
+    bool ReachabilityMap::getDistance(const KDL::Vector &x, double &distance) const {
+
+        int ix0 = std::floor((x.x() - ep_min_(0)) / voxel_size_);
+        int iy0 = std::floor((x.y() - ep_min_(1)) / voxel_size_);
+        int iz0 = std::floor((x.z() - ep_min_(2)) / voxel_size_);
+        int ix1 = ix0+1;
+        int iy1 = iy0+1;
+        int iz1 = iz0+1;
+
+        if (ix0 < 1 || iy0 < 1 || iz0 < 1 || ix1 >= steps_[0]-2 || iy1 >= steps_[1]-2 || iz1 >= steps_[2]-2) {
+            return false;
+        }
+
+        double x0 = ep_min_(0) + ix0 * voxel_size_;
+        double y0 = ep_min_(1) + iy0 * voxel_size_;
+        double z0 = ep_min_(2) + iz0 * voxel_size_;
+        double x1 = ep_min_(0) + ix1 * voxel_size_;
+        double y1 = ep_min_(1) + iy1 * voxel_size_;
+        double z1 = ep_min_(2) + iz1 * voxel_size_;
+
+        double a[64];
+
+        tricubic_get_coeff(a, ix0, iy0, iz0);
+
+        distance = tricubic_eval(a, (x.x() - x0) / voxel_size_, (x.y() - y0) / voxel_size_, (x.z() - z0) / voxel_size_, 0, 0, 0)/ voxel_size_;
+
         return true;
     }
 
@@ -1172,46 +1202,10 @@ fptype ReachabilityMap::ip(list xyz){
         double y1 = ep_min_(1) + iy1 * voxel_size_;
         double z1 = ep_min_(2) + iz1 * voxel_size_;
 
-/*        int indices[8] = {
-            composeIndex(ix0, iy0, iz0),
-            composeIndex(ix1, iy0, iz0),
-            composeIndex(ix0, iy1, iz0),
-            composeIndex(ix1, iy1, iz0),
-            composeIndex(ix0, iy0, iz1),
-            composeIndex(ix1, iy0, iz1),
-            composeIndex(ix0, iy1, iz1),
-            composeIndex(ix1, iy1, iz1),
-        };
-*/
-        int indices[8] = {
-            composeIndex(ix0, iy0, iz0),
-            composeIndex(ix0, iy0, iz1),
-            composeIndex(ix0, iy1, iz0),
-            composeIndex(ix0, iy1, iz1),
-            composeIndex(ix1, iy0, iz0),
-            composeIndex(ix1, iy0, iz1),
-            composeIndex(ix1, iy1, iz0),
-            composeIndex(ix1, iy1, iz1),
-        };
-
         double a[64];
-        double f[8], dfdx[8], dfdy[8], dfdz[8], d2fdxdy[8], d2fdxdz[8], d2fdydz[8], d3fdxdydz[8];
-        for (int i = 0; i < 8; i++) {
-            int nidx = indices[i];
-            f[i] = d_map_[nidx];
-            dfdx[i] = -dd_map_[nidx].dx_ * voxel_size_;
-            dfdy[i] = -dd_map_[nidx].dy_ * voxel_size_;
-            dfdz[i] = -dd_map_[nidx].dz_ * voxel_size_;
-            d2fdxdy[i] = 0.0;//dd_map_[nidx].dx_ * dd_map_[nidx].dy_;// * voxel_size_ * voxel_size_;
-            d2fdxdz[i] = 0.0;//dd_map_[nidx].dx_ * dd_map_[nidx].dz_;// * voxel_size_ * voxel_size_;
-            d2fdydz[i] = 0.0;//dd_map_[nidx].dy_ * dd_map_[nidx].dz_;// * voxel_size_ * voxel_size_;
-            d3fdxdydz[i] = 0.0;//dd_map_[nidx].dx_ * dd_map_[nidx].dy_ * dd_map_[nidx].dz_;// * voxel_size_ * voxel_size_ * voxel_size_;
-        }
 
         tricubic_get_coeff(a, ix0, iy0, iz0);
 
-        //tricubic_get_coeff(a, f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz);
-//std::cout << (x.x() - x0) / voxel_size_ << " " << (x.y() - y0) / voxel_size_ << " " << (x.z() - z0) / voxel_size_ << std::endl;
         double dx, dy, dz;
         dx = tricubic_eval(a, (x.x() - x0) / voxel_size_, (x.y() - y0) / voxel_size_, (x.z() - z0) / voxel_size_, 1, 0, 0)/ voxel_size_;
         dy = tricubic_eval(a, (x.x() - x0) / voxel_size_, (x.y() - y0) / voxel_size_, (x.z() - z0) / voxel_size_, 0, 1, 0)/ voxel_size_;
@@ -1219,145 +1213,7 @@ fptype ReachabilityMap::ip(list xyz){
         gradient = -KDL::Vector(dx, dy, dz);
         gradient.Normalize();
 
-//        gradient = KDL::Vector(dd_map_[indices[0]].dx_, dd_map_[indices[0]].dy_, dd_map_[indices[0]].dz_);
-//        gradient.Normalize();
-
-//        gradient = KDL::Vector(0, 4.0 * tricubic_eval(a, (x.x() - x0) / voxel_size_, (x.y() - y0) / voxel_size_, (x.z() - z0) / voxel_size_, 0, 0, 0), 0);
-
         return true;
-
-
-        bool valid_gradients[8];
-        KDL::Vector gradients[8];
-
-        double max_value = -0.0001;
-//        KDL::Vector mean_vec = 0.0;
-        for (int i = 0; i < 8; i++) {
-            if (getGradient(indices[i], gradients[i])) {
-//                mean_vec += 
-            }
-
-            if (d_map_[indices[i]] > max_value) {
-                max_value = d_map_[indices[i]];
-            }
-        }
-
-//        if (d_map_[n_idx] < 0.0) {
-//            return false;
-//        }
-
-        KDL::Vector V[8];
-        int obst_count = 0;
-        for (int i = 0; i < 8; i++) {
-            if (!getGradient(indices[i], V[i])) {
-                V[i] = KDL::Vector();
-                obst_count++;
-            }
-/*            if (d_map_[indices[i]] < 0.0) {
-                V[i] = max_value + voxel_size_;
-            }
-            else {
-                V[i] = d_map_[indices[i]];
-            }
-*/
-        }
-        if (obst_count == 8) {
-            return false;
-        }
-/*
-        double x0 = ep_min_(0) + ix0 * voxel_size_;
-        double y0 = ep_min_(1) + iy0 * voxel_size_;
-        double z0 = ep_min_(2) + iz0 * voxel_size_;
-        double x1 = ep_min_(0) + ix1 * voxel_size_;
-        double y1 = ep_min_(1) + iy1 * voxel_size_;
-        double z1 = ep_min_(2) + iz1 * voxel_size_;
-*/
-        double xd = (x.x() - x0) / (x1 - x0);
-        double yd = (x.y() - y0) / (y1 - y0);
-        double zd = (x.z() - z0) / (z1 - z0);
-
-        KDL::Vector c00 = V[0] * (1.0 - xd) + V[1] * xd;
-        KDL::Vector c10 = V[2] * (1.0 - xd) + V[3] * xd;
-        KDL::Vector c01 = V[4] * (1.0 - xd) + V[5] * xd;
-        KDL::Vector c11 = V[6] * (1.0 - xd) + V[7] * xd;
-
-        KDL::Vector c0 = c00 * (1.0 - yd) + c10 * yd;
-        KDL::Vector c1 = c01 * (1.0 - yd) + c11 * yd;
-
-        KDL::Vector c = c0 * (1.0 - zd) + c1 * zd;
-/*
-c = ((V[0] * (1.0 - xd) + V[1] * xd) * (1.0 - yd) + (V[2] * (1.0 - xd) + V[3] * xd) * yd) * (1.0 - zd) + ((V[4] * (1.0 - xd) + V[5] * xd) * (1.0 - yd) + (V[6] * (1.0 - xd) + V[7] * xd) * yd) * zd;
-
-
-c = ((V[0] * (1.0 - xd) + V[1] * xd) * (1.0 - yd) + (V[2] * (1.0 - xd) + V[3] * xd) * yd) * (1.0 - zd) + ((V[4] * (1.0 - xd) + V[5] * xd) * (1.0 - yd) + (V[6] * (1.0 - xd) + V[7] * xd) * yd) * zd;
-
-
-
-dc/dx
-*/
-//        c.Normalize();
-        gradient = c;
-        return true;
-
-/*
-        int idx = getIndex(x);
-        if (idx < 0) {
-//            std::cout << "ReachabilityMap::getGradient: point is outside the map" << std::endl;
-            return false;
-        }
-
-        double min_value = d_map_[idx];
-
-        int ix = getIndexDim(x.x(), 0);
-        int iy = getIndexDim(x.y(), 1);
-        int iz = getIndexDim(x.z(), 2);
-        KDL::Vector pt;
-        getIndexCenter(ix, iy, iz, pt);
-
-        bool obstacle = false;
-        int search_space = 1;
-        if (min_value < 0.0) {
-            // we are in the obstacle
-            min_value = 100000.0;
-            obstacle = true;
-//            std::cout << "obst. " << pt[0] << " " << pt[1] << " " << pt[2] << " " << d_map_[idx] << std::endl;
-//            return false;
-//            std::cout << "obstacle" << std::endl;
-        }
-        int min_ix=-1, min_iy=-1, min_iz=-1;
-
-        for (int iix = std::max(0,ix-search_space); iix < std::min(steps_[0], ix+search_space+1); iix++) {
-            for (int iiy = std::max(0,iy-search_space); iiy < std::min(steps_[1], iy+search_space+1); iiy++) {
-                for (int iiz = std::max(0,iz-search_space); iiz < std::min(steps_[2], iz+search_space+1); iiz++) {
-                    if (ix == iix && iy == iiy && iz == iiz) {
-                        continue;
-                    }
-                    int pt_idx = composeIndex(iix, iiy, iiz);
-                    double pt_val = d_map_[pt_idx];
-                    if (pt_val >= 0.0 && min_value > pt_val) {
-//                    if (pt_val >= 0.0 && (obstacle || collisionFreeLine(x, iix, iiy, iiz)) && min_value > pt_val) {
-//                    if (pt_val >= 0.0 && bounduary_set_.find(pt_idx) == bounduary_set_.end() && min_value > pt_val) {
-                            min_value = pt_val;
-                            min_ix = iix;
-                            min_iy = iiy;
-                            min_iz = iiz;
-                    }
-                }
-            }
-        }
-
-        if (min_ix == -1) {
-//            std::cout << "ReachabilityMap::getGradient: could not find gradient, min_value: " << min_value << std::endl;
-//            std::cout << "no min " << pt[0] << " " << pt[1] << " " << pt[2] << " " << d_map_[idx] << std::endl;
-            return false;
-        }
-        KDL::Vector min_pt;
-        getIndexCenter(min_ix, min_iy, min_iz, min_pt);
-//        std::cout << " ok " << pt[0] << " " << pt[1] << " " << pt[2] << " " << d_map_[idx] << " to " << min_pt[0] << " " << min_pt[1] << " " << min_pt[2] << " " << min_value << std::endl;
-        gradient = min_pt - pt;
-        gradient.Normalize();
-        return true;
-*/
     }
 
     bool ReachabilityMap::getAllGradients(const KDL::Vector &x, std::vector<ReachabilityMap::GradientInfo > &gradients) const {

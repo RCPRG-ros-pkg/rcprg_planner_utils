@@ -71,8 +71,8 @@
         pose_diff_function_(pose_diff_function)
     {
         for (int q_idx = 0; q_idx < ndof; q_idx++) {
-            Kc_JOINT_[q_idx] = 10.0;
-            Dxi_JOINT_[q_idx] = 0.7;
+            Kc_JOINT_[q_idx] = 1.0;
+            Dxi_JOINT_[q_idx] = 0.1;
         }
 
         double Kc_lin = 200.0;
@@ -139,7 +139,7 @@
         }
         task_JLC_.reset( new Task_JLC(lower_limit, upper_limit, limit_range, max_trq, jlc_excluded_q_idx) );
 
-        task_COL_.reset( new Task_COL(ndof_, activation_dist_, 50.0, kin_model_, col_model_) );
+        task_COL_.reset( new Task_COL(ndof_, activation_dist_, 80.0, kin_model_, col_model_) );
         task_HAND_.reset( new Task_HAND(ndof_, ndim_) );
 
         J_r_HAND_6_.resize(6, ndof_);
@@ -295,6 +295,26 @@
                 }
 
                 q_ += (prev_dq + dq_) / 2.0 * time_d;
+                for (int q_idx = 0; q_idx < ndof_; q_idx++) {
+                    if (q_[q_idx] != q_[q_idx]) {
+                        std::cout << "q_: " << q_.transpose() << std::endl;
+                        std::cout << "dq_: " << dq_.transpose() << std::endl;
+                        std::cout << "torque_: " << torque_.transpose() << std::endl;
+                        std::cout << "torque_JLC_: " << torque_JLC_.transpose() << std::endl;
+                        std::cout << "torque_WCCr_: " << torque_WCCr_.transpose() << std::endl;
+                        std::cout << "torque_WCCl_: " << torque_WCCl_.transpose() << std::endl;
+                        std::cout << "torque_COL_: " << torque_COL_.transpose() << std::endl;
+                        std::cout << "torque_HAND_: " << torque_HAND_.transpose() << std::endl;
+                        std::cout << "torque_JOINT_: " << torque_JOINT_.transpose() << std::endl;
+                        std::cout << "N_JLC_: " << std::endl << N_JLC_ << std::endl;
+                        std::cout << "N_WCCr_: " << std::endl << N_WCCr_ << std::endl;
+                        std::cout << "N_WCCl_: " << std::endl << N_WCCl_ << std::endl;
+                        std::cout << "N_COL_: " << std::endl << N_COL_ << std::endl;
+                        std::cout << "N_HAND_: " << std::endl << N_HAND_ << std::endl;
+
+                        break;
+                    }
+                }
     }
 
     void DynamicsSimulatorHandPose::oneStep(MarkerPublisher *markers_pub, int m_id) {

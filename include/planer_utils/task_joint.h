@@ -53,7 +53,7 @@ public:
 protected:
     int ndof_;
     Eigen::VectorXd activation_;
-    Eigen::VectorXd k_;
+//    Eigen::VectorXd k_;
     Eigen::VectorXd k0_;
     Eigen::MatrixXd q_, d_;
     Eigen::MatrixXd J_;

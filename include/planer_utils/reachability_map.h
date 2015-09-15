@@ -71,7 +71,8 @@ public:
     double getMaxValue() const;
 
     bool createDistanceMap(const KDL::Vector &origin, boost::function<bool(const KDL::Vector &x)> collision_func, const KDL::Vector &lower_bound, const KDL::Vector &upper_bound);
-    bool getDistnace(const KDL::Vector &x, double &distance) const;
+    bool getDistance(const KDL::Vector &x, double &distance) const;
+
     bool getGradient(const KDL::Vector &x, KDL::Vector &gradient) const;
     bool getAllGradients(const KDL::Vector &x, std::vector<GradientInfo > &gradients) const;
 
