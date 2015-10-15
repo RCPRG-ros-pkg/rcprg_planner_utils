@@ -30,6 +30,9 @@
 //
 
 #include "planer_utils/utilities.h"
+#include <boost/math/special_functions/bessel.hpp>
+
+static const double PI(3.141592653589793);
 
     void publishJointState(ros::Publisher &joint_state_pub, const Eigen::VectorXd &q, const std::vector<std::string > &joint_names) {
         sensor_msgs::JointState js;
@@ -175,5 +178,31 @@ void printFrameKDL(const KDL::Frame &f) {
     double qx, qy, qz, qw, px(f.p.x()), py(f.p.y()), pz(f.p.z());
     f.M.GetQuaternion(qx, qy, qz, qw);
     std::cout << "KDL::Frame(KDL::Rotation::Quaternion(" << qx << ", " << qy << ", " << qz << ", " << qw << "), KDL::Vector(" << px << ", " << py << ", " << pz << "))" << std::endl;
+}
+
+double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma) {
+    static const double sqrt_2pi_pow_3 = std::sqrt(std::pow(2.0 * PI, 3.0));
+    return std::exp( - ((x-mean).squaredNorm()) / (2.0 * sigma * sigma) ) / (sqrt_2pi_pow_3 * sigma);
+}
+
+double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma) {
+    static const double sqrt_2pi_pow_2 = std::sqrt(std::pow(2.0 * PI, 2.0));
+    return std::exp( - ((x-mean).squaredNorm()) / (2.0 * sigma * sigma) ) / (sqrt_2pi_pow_2 * sigma);
+}
+
+double uniVariateIsotropicGaussianKernel(double x, double mean, double sigma) {
+    static const double sqrt_2pi = std::sqrt(2.0 * PI);
+    return std::exp( - ((x-mean)*(x-mean)) / (2.0 * sigma * sigma) ) / (sqrt_2pi * sigma);
+}
+
+double misesFisherKernelConstant(double sigma) {
+    double kappa = sigma;
+    double p = 4.0;
+    double Cp = std::pow(kappa, p / 2.0 - 1.0) / (std::pow(2.0 * PI, p / 2.0) * boost::math::cyl_bessel_i(p / 2.0 - 1.0, kappa));
+    return Cp;
+}
+
+double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp) {
+    return Cp * (std::exp(sigma * (q-mean).squaredNorm()) + std::exp(-sigma * (q-mean).squaredNorm())) / 2.0;
 }
 
