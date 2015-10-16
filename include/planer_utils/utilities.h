@@ -53,6 +53,10 @@ int addRobotModelVis(MarkerPublisher &markers_pub, int m_id, const boost::shared
 void getPointOnPath(const std::list<Eigen::VectorXd > &path, double f, Eigen::VectorXd &x);
 double getPathLength(const std::list<Eigen::VectorXd > &path);
 void printFrameKDL(const KDL::Frame &f);
+double getAngle(const KDL::Vector &v1, const KDL::Vector &v2);
+void EigenTfToKDL(const Eigen::Isometry3d &tf, KDL::Frame &kdlT);
+void KDLToEigenTf(const KDL::Frame &kdlT, Eigen::Isometry3d &tf);
+
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma);
 double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma);
 double uniVariateIsotropicGaussianKernel(double x, double mean, double sigma);
