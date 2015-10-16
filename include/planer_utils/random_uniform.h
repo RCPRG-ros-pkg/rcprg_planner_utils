@@ -35,10 +35,10 @@
 #include "Eigen/Dense"
 
 double randomUniform(double min, double max);
-
 void randomUnitQuaternion(Eigen::VectorXd &quat);
-
+void randomUnitQuaternion(Eigen::Vector4d &quat);
 void randomUnitSphere(Eigen::VectorXd &sp);
+void randomUnitSphere(Eigen::Vector3d &sp);
 
 #endif  // RANDOM_UNIFORM_H__
 

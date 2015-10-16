@@ -52,7 +52,32 @@ void randomUnitQuaternion(Eigen::VectorXd &quat) {
     quat.normalize();
 }
 
+void randomUnitQuaternion(Eigen::Vector4d &quat) {
+    static boost::random::mt19937 rng(time(NULL));
+    static boost::random::normal_distribution<> normal;
+
+    do {
+        quat(0) = normal(rng);
+        quat(1) = normal(rng);
+        quat(2) = normal(rng);
+        quat(3) = normal(rng);
+    } while (quat.norm() < 0.00001);
+    quat.normalize();
+}
+
 void randomUnitSphere(Eigen::VectorXd &sp) {
+    static boost::random::mt19937 rng(time(NULL));
+    static boost::random::normal_distribution<> normal;
+
+    do {
+        sp(0) = normal(rng);
+        sp(1) = normal(rng);
+        sp(2) = normal(rng);
+    } while (sp.norm() < 0.00001);
+    sp.normalize();
+}
+
+void randomUnitSphere(Eigen::Vector3d &sp) {
     static boost::random::mt19937 rng(time(NULL));
     static boost::random::normal_distribution<> normal;
 

@@ -195,14 +195,20 @@ double uniVariateIsotropicGaussianKernel(double x, double mean, double sigma) {
     return std::exp( - ((x-mean)*(x-mean)) / (2.0 * sigma * sigma) ) / (sqrt_2pi * sigma);
 }
 
-double misesFisherKernelConstant(double sigma) {
+double misesFisherKernelConstant(double sigma, int dimensions) {
     double kappa = sigma;
-    double p = 4.0;
-    double Cp = std::pow(kappa, p / 2.0 - 1.0) / (std::pow(2.0 * PI, p / 2.0) * boost::math::cyl_bessel_i(p / 2.0 - 1.0, kappa));
+    double p_div_2 = static_cast<double >(dimensions) / 2.0;
+    double Cp = std::pow(kappa, p_div_2 - 1.0) / (std::pow(2.0 * PI, p_div_2) * boost::math::cyl_bessel_i(p_div_2 - 1.0, kappa));
     return Cp;
 }
 
 double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp) {
-    return Cp * (std::exp(sigma * (q-mean).squaredNorm()) + std::exp(-sigma * (q-mean).squaredNorm())) / 2.0;
+    double dot_prod = q.dot(mean);
+    return Cp * (std::exp(sigma * dot_prod) + std::exp(-sigma * dot_prod)) / 2.0;
+}
+
+double misesFisherKernel(const Eigen::Vector3d &q, const Eigen::Vector3d &mean, double sigma, double Cp) {
+    double dot_prod = q.dot(mean);
+    return Cp * (std::exp(sigma * dot_prod) + std::exp(-sigma * dot_prod)) / 2.0;
 }
 

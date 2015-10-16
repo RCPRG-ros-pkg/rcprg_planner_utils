@@ -56,8 +56,9 @@ void printFrameKDL(const KDL::Frame &f);
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma);
 double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma);
 double uniVariateIsotropicGaussianKernel(double x, double mean, double sigma);
-double misesFisherKernelConstant(double sigma);
+double misesFisherKernelConstant(double sigma, int dimensions);
 double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp);
+double misesFisherKernel(const Eigen::Vector3d &q, const Eigen::Vector3d &mean, double sigma, double Cp);
 
 #endif  // UTILITIES_H__
 
