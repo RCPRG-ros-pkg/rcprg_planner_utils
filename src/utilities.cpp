@@ -30,6 +30,7 @@
 //
 
 #include "planer_utils/utilities.h"
+#include "planer_utils/random_uniform.h"
 #include <boost/math/special_functions/bessel.hpp>
 
 static const double PI(3.141592653589793);
@@ -210,5 +211,29 @@ double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, 
 double misesFisherKernel(const Eigen::Vector3d &q, const Eigen::Vector3d &mean, double sigma, double Cp) {
     double dot_prod = q.dot(mean);
     return Cp * (std::exp(sigma * dot_prod) + std::exp(-sigma * dot_prod)) / 2.0;
+}
+
+int vonMisesFisherSample(const Eigen::Vector3d &mean, double pdf_mean, double sigma, double Cp, Eigen::Vector3d &x) {
+    for (int i = 0; i < 100000; i++) {
+        randomUnitSphere(x);
+        double pdf = misesFisherKernel(x, mean, sigma, Cp);
+        double rand_pdf = randomUniform(0.0, pdf_mean);
+        if (rand_pdf < pdf) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int vonMisesFisherSample(const Eigen::Vector4d &mean, double pdf_mean, double sigma, double Cp, Eigen::Vector4d &x) {
+    for (int i = 0; i < 100000; i++) {
+        randomUnitQuaternion(x);
+        double pdf = misesFisherKernel(x, mean, sigma, Cp);
+        double rand_pdf = randomUniform(0.0, pdf_mean);
+        if (rand_pdf < pdf) {
+            return i;
+        }
+    }
+    return -1;
 }
 
