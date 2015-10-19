@@ -117,6 +117,57 @@ protected:
     std::set<int > bounduary_set_;
     KDL::Vector origin_;
 };
+/*
+class VoxelGrid3 {
+public:
 
+    VoxelGrid3(double voxel_size, int dim);
+
+    ~VoxelGrid3();
+
+    void generate(const Eigen::VectorXd &lower_bound, const Eigen::VectorXd &upper_bound);
+
+    void clear();
+    double getValue(const Eigen::VectorXd &x) const;
+    void setValue(const Eigen::VectorXd &x, int value);
+
+    void getNeighbourIndices(const std::vector<int> &d, std::list<int> &n_indices);
+    void grow();
+
+    bool createDistanceMap(const KDL::Vector &origin, boost::function<bool(const KDL::Vector &x)> collision_func, const KDL::Vector &lower_bound, const KDL::Vector &upper_bound);
+    bool getDistance(const KDL::Vector &x, double &distance) const;
+
+    bool getGradient(const KDL::Vector &x, KDL::Vector &gradient) const;
+    bool getAllGradients(const KDL::Vector &x, std::vector<GradientInfo > &gradients) const;
+
+    const KDL::Vector &getOrigin() const;
+
+    void printDistanceMap() const;
+
+protected:
+
+    int getIndex(const Eigen::VectorXd &x) const;
+    int getIndex(const KDL::Vector &x) const;
+    int getIndexDim(double x, int dim_idx) const;
+    int composeIndex(const Eigen::Vector3i &i) const;
+    int composeIndex(int ix, int iy, int iz) const;
+    void decomposeIndex(int idx, int &ix, int &iy, int &iz) const;
+    void getIndexCenter(int ix, int iy, int iz, KDL::Vector &pt) const;
+
+    double voxel_size_;
+    int dim_;
+    int max_value_;
+    Eigen::VectorXd ep_min_, ep_max_;
+    std::vector<std::vector<int > > neighbours_;
+    std::vector<int > r_map_;
+    std::vector<int > p_map_;
+    std::vector<int > steps_;
+    std::vector<std::list<std::pair<KDL::Rotation, Eigen::VectorXd > > > r_map_rot_;
+
+    std::vector<double > d_map_;
+    std::set<int > bounduary_set_;
+    KDL::Vector origin_;
+};
+*/
 #endif  // REACHABILITY_MAP_H__
 
