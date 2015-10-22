@@ -40,6 +40,7 @@
 #include <string>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
 
 #include "Eigen/Dense"
 
@@ -56,6 +57,8 @@ void printFrameKDL(const KDL::Frame &f);
 double getAngle(const KDL::Vector &v1, const KDL::Vector &v2);
 void EigenTfToKDL(const Eigen::Isometry3d &tf, KDL::Frame &kdlT);
 void KDLToEigenTf(const KDL::Frame &kdlT, Eigen::Isometry3d &tf);
+std::ostream& operator<< (std::ostream& stream, const KDL::Frame& f);
+std::istream& operator>> (std::istream& stream, KDL::Frame& f);
 
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma);
 double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma);

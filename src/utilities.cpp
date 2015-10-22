@@ -195,6 +195,20 @@ void KDLToEigenTf(const KDL::Frame &kdlT, Eigen::Isometry3d &tf) {
     tf.fromPositionOrientationScale(Eigen::Vector3d(kdlT.p.x(), kdlT.p.y(), kdlT.p.z()), Eigen::Quaterniond(qw, qx, qy, qz), Eigen::Vector3d(1.0, 1.0, 1.0));
 }
 
+std::ostream& operator<< (std::ostream& stream, const KDL::Frame& f) {
+    double qx, qy, qz, qw;
+    f.M.GetQuaternion(qx, qy, qz, qw);
+    stream << f.p.x() << " " << f.p.y() << " " << f.p.z() << " " << qx << " " << qy << " " << qz << " " << qw;
+}
+
+std::istream& operator>> (std::istream& stream, KDL::Frame& f) {
+    double x, y, z, qx, qy, qz, qw;
+    stream >> x >> y >> z >> qx >> qy >> qz >> qw;
+    f = KDL::Frame(KDL::Rotation::Quaternion(qx, qy, qz, qw), KDL::Vector(x, y, z));
+}
+
+/******************************************************************************************************************************************************************/
+
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma) {
     static const double sqrt_2pi_pow_3 = std::sqrt(std::pow(2.0 * PI, 3.0));
     return std::exp( - ((x-mean).squaredNorm()) / (2.0 * sigma * sigma) ) / (sqrt_2pi_pow_3 * sigma);
