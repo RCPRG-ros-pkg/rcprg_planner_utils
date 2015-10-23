@@ -59,6 +59,10 @@ void EigenTfToKDL(const Eigen::Isometry3d &tf, KDL::Frame &kdlT);
 void KDLToEigenTf(const KDL::Frame &kdlT, Eigen::Isometry3d &tf);
 std::ostream& operator<< (std::ostream& stream, const KDL::Frame& f);
 std::istream& operator>> (std::istream& stream, KDL::Frame& f);
+std::string frameKdl2string(const KDL::Frame &f);
+KDL::Frame string2frameKdl(const std::string &str);
+std::string double2string(double d);
+double string2double(const std::string &str);
 
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma);
 double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma);

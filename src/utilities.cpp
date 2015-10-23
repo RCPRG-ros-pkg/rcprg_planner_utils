@@ -32,6 +32,7 @@
 #include "planer_utils/utilities.h"
 #include "planer_utils/random_uniform.h"
 #include <boost/math/special_functions/bessel.hpp>
+#include <sstream>
 
 static const double PI(3.141592653589793);
 
@@ -199,12 +200,40 @@ std::ostream& operator<< (std::ostream& stream, const KDL::Frame& f) {
     double qx, qy, qz, qw;
     f.M.GetQuaternion(qx, qy, qz, qw);
     stream << f.p.x() << " " << f.p.y() << " " << f.p.z() << " " << qx << " " << qy << " " << qz << " " << qw;
+    return stream;
 }
 
 std::istream& operator>> (std::istream& stream, KDL::Frame& f) {
     double x, y, z, qx, qy, qz, qw;
     stream >> x >> y >> z >> qx >> qy >> qz >> qw;
     f = KDL::Frame(KDL::Rotation::Quaternion(qx, qy, qz, qw), KDL::Vector(x, y, z));
+    return stream;
+}
+
+std::string frameKdl2string(const KDL::Frame &f) {
+    std::ostringstream strs;
+    strs << f;
+    return strs.str();
+}
+
+KDL::Frame string2frameKdl(const std::string &str) {
+    std::istringstream strs(str);
+    KDL::Frame ret;
+    strs >> ret;
+    return ret;
+}
+
+std::string double2string(double d) {
+    std::ostringstream strs;
+    strs << d;
+    return strs.str();
+}
+
+double string2double(const std::string &str) {
+    std::istringstream strs(str);
+    double ret;
+    strs >> ret;
+    return ret;
 }
 
 /******************************************************************************************************************************************************************/
