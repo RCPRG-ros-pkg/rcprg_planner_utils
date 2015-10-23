@@ -236,6 +236,13 @@ double string2double(const std::string &str) {
     return ret;
 }
 
+int string2int(const std::string &str) {
+    std::istringstream strs(str);
+    int ret;
+    strs >> ret;
+    return ret;
+}
+
 /******************************************************************************************************************************************************************/
 
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma) {
