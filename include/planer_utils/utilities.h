@@ -69,10 +69,12 @@ double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::
 double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma);
 double uniVariateIsotropicGaussianKernel(double x, double mean, double sigma);
 double misesFisherKernelConstant(double sigma, int dimensions);
-double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp);
 double misesFisherKernel(const Eigen::Vector3d &q, const Eigen::Vector3d &mean, double sigma, double Cp);
 int vonMisesFisherSample(const Eigen::Vector3d &mean, double pdf_mean, double sigma, double Cp, Eigen::Vector3d &x);
 int vonMisesFisherSample(const Eigen::Vector4d &mean, double pdf_mean, double sigma, double Cp, Eigen::Vector4d &x);
+double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp);
+double orientationNormalKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma);
+int orientationNormalSample(const Eigen::Vector4d &mean, double sigma, Eigen::Vector4d &x);
 
 #endif  // UTILITIES_H__
 

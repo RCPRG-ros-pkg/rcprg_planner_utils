@@ -33,6 +33,8 @@
 #include "planer_utils/random_uniform.h"
 #include <boost/math/special_functions/bessel.hpp>
 #include <sstream>
+#include <boost/random.hpp>
+#include <boost/random/normal_distribution.hpp>
 
 static const double PI(3.141592653589793);
 
@@ -267,11 +269,6 @@ double misesFisherKernelConstant(double sigma, int dimensions) {
     return Cp;
 }
 
-double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp) {
-    double dot_prod = q.dot(mean);
-    return Cp * (std::exp(sigma * dot_prod) + std::exp(-sigma * dot_prod)) / 2.0;
-}
-
 double misesFisherKernel(const Eigen::Vector3d &q, const Eigen::Vector3d &mean, double sigma, double Cp) {
     double dot_prod = q.dot(mean);
     return Cp * (std::exp(sigma * dot_prod) + std::exp(-sigma * dot_prod)) / 2.0;
@@ -289,6 +286,11 @@ int vonMisesFisherSample(const Eigen::Vector3d &mean, double pdf_mean, double si
     return -1;
 }
 
+double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp) {
+    double dot_prod = q.dot(mean);
+    return Cp * (std::exp(sigma * dot_prod) + std::exp(-sigma * dot_prod)) / 2.0;
+}
+
 int vonMisesFisherSample(const Eigen::Vector4d &mean, double pdf_mean, double sigma, double Cp, Eigen::Vector4d &x) {
     for (int i = 0; i < 100000; i++) {
         randomUnitQuaternion(x);
@@ -300,4 +302,33 @@ int vonMisesFisherSample(const Eigen::Vector4d &mean, double pdf_mean, double si
     }
     return -1;
 }
+
+double orientationNormalKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma) {
+    KDL::Rotation r_q(KDL::Rotation::Quaternion(q(0), q(1), q(2), q(3)));
+    KDL::Rotation r_mean(KDL::Rotation::Quaternion(mean(0), mean(1), mean(2), mean(3)));
+
+    KDL::Vector diff = KDL::diff(r_q, r_mean);
+    return uniVariateIsotropicGaussianKernel( diff.Norm(), 0.0, sigma );
+}
+
+int orientationNormalSample(const Eigen::Vector4d &mean, double sigma, Eigen::Vector4d &x) {
+
+    static boost::mt19937 rng(rand());
+    boost::normal_distribution<> nd(0.0, sigma);
+    boost::variate_generator<boost::mt19937&, 
+                           boost::normal_distribution<> > var_nor(rng, nd);
+
+    double angle = var_nor();
+
+    Eigen::Vector3d vec3;
+    randomUnitSphere(vec3);
+
+    KDL::Rotation r_mean(KDL::Rotation::Quaternion(mean(0), mean(1), mean(2), mean(3)));
+    KDL::Rotation r_q = KDL::addDelta(r_mean, KDL::Vector(vec3(0), vec3(1), vec3(2)), angle);
+
+    r_q.GetQuaternion(x(0), x(1), x(2), x(3));
+
+    return 1;
+}
+
 
