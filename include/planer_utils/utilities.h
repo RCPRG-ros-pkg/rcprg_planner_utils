@@ -64,6 +64,8 @@ KDL::Frame string2frameKdl(const std::string &str);
 std::string double2string(double d);
 double string2double(const std::string &str);
 int string2int(const std::string &str);
+double deg2rad(double deg);
+double rad2deg(double rad);
 
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma);
 double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma);

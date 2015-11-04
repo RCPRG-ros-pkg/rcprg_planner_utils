@@ -245,6 +245,14 @@ int string2int(const std::string &str) {
     return ret;
 }
 
+double deg2rad(double deg) {
+    return deg / 180.0 * PI;
+}
+
+double rad2deg(double rad) {
+    return rad / PI * 180.0;
+}
+
 /******************************************************************************************************************************************************************/
 
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma) {
