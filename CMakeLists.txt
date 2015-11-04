@@ -10,6 +10,13 @@ find_package(Eigen REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(OMPL REQUIRED)
 
+# Export package information (replaces catkin_package() macro) 
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES planer_utils
+  DEPENDS roscpp geometry_msgs visualization_msgs message_runtime Eigen orocos_kdl collision_convex_model
+)
+
 link_directories(${orocos_kdl_LIBRARY_DIRS} ${OMPL_LIBRARY_DIRS})
 
 include_directories(${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${USE_OROCOS_INCLUDE_DIRS} ${OMPL_INCLUDE_DIRS})
@@ -22,11 +29,4 @@ target_link_libraries(planer_utils ${catkin_LIBRARIES} ${USE_OROCOS_LIBRARIES} $
 add_dependencies(planer_utils ${PROJECT_NAME}_gencpp)
 
 ### Orocos Package Exports and Install Targets ###
-
-# Export package information (replaces catkin_package() macro) 
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES planer_utils
-  DEPENDS roscpp geometry_msgs visualization_msgs message_runtime Eigen orocos_kdl collision_convex_model
-)
 
