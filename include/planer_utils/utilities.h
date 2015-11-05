@@ -45,6 +45,7 @@
 #include "Eigen/Dense"
 
 #include <collision_convex_model/collision_convex_model.h>
+#include "kin_model/kin_model.h"
 #include "marker_publisher.h"
 
 void publishJointState(ros::Publisher &joint_state_pub, const Eigen::VectorXd &q, const std::vector<std::string > &joint_names);
@@ -62,6 +63,7 @@ std::istream& operator>> (std::istream& stream, KDL::Frame& f);
 std::string frameKdl2string(const KDL::Frame &f);
 KDL::Frame string2frameKdl(const std::string &str);
 std::string double2string(double d);
+std::string int2string(int i);
 double string2double(const std::string &str);
 int string2int(const std::string &str);
 double deg2rad(double deg);
@@ -77,6 +79,10 @@ int vonMisesFisherSample(const Eigen::Vector4d &mean, double pdf_mean, double si
 double misesFisherKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma, double Cp);
 double orientationNormalKernel(const Eigen::Vector4d &q, const Eigen::Vector4d &mean, double sigma);
 int orientationNormalSample(const Eigen::Vector4d &mean, double sigma, Eigen::Vector4d &x);
+
+bool checkSubtreeCollision( const boost::shared_ptr<self_collision::CollisionModel> &col_model, const boost::shared_ptr<KinematicModel > &kin_model,
+                            const std::map<std::string, double > &q_map, const std::string &root_name, const KDL::Frame &T_W_T,
+                            const boost::shared_ptr< self_collision::Link > &link2, const KDL::Frame &T_B_L2, double &min_dist);
 
 #endif  // UTILITIES_H__
 

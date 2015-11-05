@@ -231,6 +231,12 @@ std::string double2string(double d) {
     return strs.str();
 }
 
+std::string int2string(int i) {
+    std::ostringstream strs;
+    strs << i;
+    return strs.str();
+}
+
 double string2double(const std::string &str) {
     std::istringstream strs(str);
     double ret;
@@ -339,4 +345,57 @@ int orientationNormalSample(const Eigen::Vector4d &mean, double sigma, Eigen::Ve
     return 1;
 }
 
+bool checkSubtreeCollision( const boost::shared_ptr<self_collision::CollisionModel> &col_model, const boost::shared_ptr<KinematicModel > &kin_model,
+                            const std::map<std::string, double > &q_map, const std::string &root_name, const KDL::Frame &T_W_T,
+                            const boost::shared_ptr< self_collision::Link > &link2, const KDL::Frame &T_B_L2, double &min_dist) {
+
+    Eigen::VectorXd q( kin_model->getJointCount() );
+    Eigen::VectorXd ign_q( kin_model->getIgnoredJointCount() );
+    q.setZero();
+    ign_q.setZero();
+
+    for (std::map<std::string, double >::const_iterator it = q_map.begin(); it != q_map.end(); it++) {
+        int idx = kin_model->getJointIndex( it->first );
+        if (idx >= 0) {
+            q(idx) = it->second;
+        }
+        else {
+            idx = kin_model->getIgnoredJointIndex( it->first );
+            if (idx >= 0) {
+                ign_q(idx) = it->second;
+            }
+            else {
+                std::cout << "ERROR: checkSubtreeCollision: could not find joint " << it->first << std::endl;
+                return false;
+            }
+        }
+    }
+
+//    std::cout << "checkSubtreeCollision: " << q.transpose() << " " << ign_q.transpose() << std::endl;
+    KDL::Frame T_W_R;
+    kin_model->calculateFk(T_W_R, root_name, q, ign_q);
+    KDL::Frame T_R_W = T_W_R.Inverse();
+
+    std::list<std::string > link_names;
+    kin_model->getSubtreeLinks(root_name, link_names);
+
+    min_dist = -1.0;
+
+    for (std::list<std::string >::const_iterator it = link_names.begin(); it != link_names.end(); it++) {
+        KDL::Frame T_W_Lf;
+        kin_model->calculateFk(T_W_Lf, (*it), q, ign_q);
+        KDL::Frame T_W_L = T_W_T * T_R_W * T_W_Lf;
+        double dist;
+        bool collision = self_collision::checkCollision(col_model->getLink( (*it) ), T_W_L, link2, T_B_L2, &dist);
+        if (collision) {
+            min_dist = 0.0;
+            return true;
+        }
+        std::cout << (*it) << " " << dist << std::endl;
+        if (min_dist < 0 || dist < min_dist) {
+            min_dist = dist;
+        }
+    }
+    return false;
+}
 
