@@ -35,6 +35,7 @@
 #include "ros/ros.h"
 #include "visualization_msgs/MarkerArray.h"
 #include <kdl/frames.hpp>
+#include <octomap/octomap.h>
 
 class MarkerPublisher {
 public:
@@ -50,6 +51,8 @@ public:
     int addMeshMarker(int m_id, const KDL::Vector &pos, double r, double g, double b, double a, double size_x, double size_y, double size_z, const std::string &mesh_path, const std::string &frame_id);
     int addVectorMarker(int m_id, const KDL::Vector &v1, const KDL::Vector &v2, double r, double g, double b, double a, double size, const std::string &frame_id);
     int addCapsule(int m_id, const KDL::Frame &fr, double r, double g, double b, double a, double length, double radius, const std::string &frame_id);
+    int addOctomap(int m_id, const octomap::OcTree &om, const std::string &frame_id);
+    std_msgs::ColorRGBA heightMapColor(double h);
     void addEraseMarkers(int from, int to);
 
 protected:

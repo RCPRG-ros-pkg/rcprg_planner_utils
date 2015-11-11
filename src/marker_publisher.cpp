@@ -289,6 +289,125 @@ int MarkerPublisher::addCapsule(int m_id, const KDL::Frame &fr, double r, double
 	return m_id + 3;
 }
 
+int MarkerPublisher::addOctomap(int m_id, const octomap::OcTree &om, const std::string &frame_id) {
+//    visualization_msgs::MarkerArray occupiedNodesVis;
+    // each array stores all cubes of a different size, one for each depth level:
+    int base_idx = marker_array_.markers.size();
+    marker_array_.markers.resize(marker_array_.markers.size() + om.getTreeDepth()+1);
+//    occupiedNodesVis.markers.resize(om.getTreeDepth()+1);
+
+
+  // now, traverse all leafs in the tree:
+  for (octomap::OcTree::iterator it = om.begin(), end = om.end(); it != end; ++it) {
+    if (om.isNodeOccupied(*it)){
+      double z = it.getZ();
+      double size = it.getSize();
+      double x = it.getX();
+      double y = it.getY();
+
+      unsigned idx = it.getDepth();
+
+      geometry_msgs::Point cubeCenter;
+      cubeCenter.x = x;
+      cubeCenter.y = y;
+      cubeCenter.z = z;
+
+      marker_array_.markers[idx + base_idx].points.push_back(cubeCenter);
+      //occupiedNodesVis.markers[idx].points.push_back(cubeCenter);
+      double minX, minY, minZ, maxX, maxY, maxZ;
+      om.getMetricMin(minX, minY, minZ);
+      om.getMetricMax(maxX, maxY, maxZ);
+
+      double h = (1.0 - std::min(std::max((cubeCenter.z-minZ)/ (maxZ - minZ), 0.0), 1.0)) * 0.8;//m_colorFactor;
+      marker_array_.markers[idx + base_idx].colors.push_back(heightMapColor(h));
+      //occupiedNodesVis.markers[idx].colors.push_back(heightMapColor(h));
+    }
+  }
+
+  // finish MarkerArray:
+  for (unsigned i= 0; i < om.getTreeDepth()+1; ++i, ++m_id){
+    double size = om.getNodeSize(i);
+
+    marker_array_.markers[i + base_idx].header.frame_id = frame_id;
+    marker_array_.markers[i + base_idx].header.stamp = ros::Time();
+    marker_array_.markers[i + base_idx].ns = "default";
+    marker_array_.markers[i + base_idx].id = m_id;
+    marker_array_.markers[i + base_idx].type = visualization_msgs::Marker::CUBE_LIST;
+    marker_array_.markers[i + base_idx].scale.x = size;
+    marker_array_.markers[i + base_idx].scale.y = size;
+    marker_array_.markers[i + base_idx].scale.z = size;
+    if (marker_array_.markers[i + base_idx].points.size() > 0)
+      marker_array_.markers[i + base_idx].action = visualization_msgs::Marker::ADD;
+    else
+      marker_array_.markers[i + base_idx].action = visualization_msgs::Marker::DELETE;
+
+//    occupiedNodesVis.markers[i].header.frame_id = frame_id;
+//    occupiedNodesVis.markers[i].header.stamp = ros::Time();
+//    occupiedNodesVis.markers[i].ns = "default";
+//    occupiedNodesVis.markers[i].id = m_id;
+//    occupiedNodesVis.markers[i].type = visualization_msgs::Marker::CUBE_LIST;
+//    occupiedNodesVis.markers[i].scale.x = size;
+//    occupiedNodesVis.markers[i].scale.y = size;
+//    occupiedNodesVis.markers[i].scale.z = size;
+//    if (!m_useColoredMap)
+//      occupiedNodesVis.markers[i].color = m_color;
+//    if (occupiedNodesVis.markers[i].points.size() > 0)
+//      occupiedNodesVis.markers[i].action = visualization_msgs::Marker::ADD;
+//    else
+//      occupiedNodesVis.markers[i].action = visualization_msgs::Marker::DELETE;
+    }
+    return m_id;
+}
+
+std_msgs::ColorRGBA MarkerPublisher::heightMapColor(double h) {
+
+  std_msgs::ColorRGBA color;
+  color.a = 1.0;
+  // blend over HSV-values (more colors)
+
+  double s = 1.0;
+  double v = 1.0;
+
+  h -= floor(h);
+  h *= 6;
+  int i;
+  double m, n, f;
+
+  i = floor(h);
+  f = h - i;
+  if (!(i & 1))
+    f = 1 - f; // if i is even
+  m = v * (1 - s);
+  n = v * (1 - s * f);
+
+  switch (i) {
+    case 6:
+    case 0:
+      color.r = v; color.g = n; color.b = m;
+      break;
+    case 1:
+      color.r = n; color.g = v; color.b = m;
+      break;
+    case 2:
+      color.r = m; color.g = v; color.b = n;
+      break;
+    case 3:
+      color.r = m; color.g = n; color.b = v;
+      break;
+    case 4:
+      color.r = n; color.g = m; color.b = v;
+      break;
+    case 5:
+      color.r = v; color.g = m; color.b = n;
+      break;
+    default:
+      color.r = 1; color.g = 0.5; color.b = 0.5;
+      break;
+  }
+
+  return color;
+}
+
 void MarkerPublisher::addEraseMarkers(int from, int to)
 {
 	for (int i=from; i<to; i++)
