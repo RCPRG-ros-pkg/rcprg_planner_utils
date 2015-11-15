@@ -207,8 +207,10 @@ std::ostream& operator<< (std::ostream& stream, const KDL::Frame& f) {
 
 std::istream& operator>> (std::istream& stream, KDL::Frame& f) {
     double x, y, z, qx, qy, qz, qw;
-    stream >> x >> y >> z >> qx >> qy >> qz >> qw;
-    f = KDL::Frame(KDL::Rotation::Quaternion(qx, qy, qz, qw), KDL::Vector(x, y, z));
+    Eigen::Vector4d q;
+    stream >> x >> y >> z >> q(0) >> q(1) >> q(2) >> q(3);
+    q.normalize();
+    f = KDL::Frame(KDL::Rotation::Quaternion(q(0), q(1), q(2), q(3)), KDL::Vector(x, y, z));
     return stream;
 }
 
@@ -338,7 +340,8 @@ int orientationNormalSample(const Eigen::Vector4d &mean, double sigma, Eigen::Ve
     randomUnitSphere(vec3);
 
     KDL::Rotation r_mean(KDL::Rotation::Quaternion(mean(0), mean(1), mean(2), mean(3)));
-    KDL::Rotation r_q = KDL::addDelta(r_mean, KDL::Vector(vec3(0), vec3(1), vec3(2)), angle);
+    KDL::Rotation r_diff = KDL::Rotation::Rot(KDL::Vector(vec3(0), vec3(1), vec3(2)),angle);
+    KDL::Rotation r_q = r_mean * r_diff;
 
     r_q.GetQuaternion(x(0), x(1), x(2), x(3));
 
