@@ -29,51 +29,25 @@
 // Author: Dawid Seredynski
 //
 
-#include "planer_utils/velma_q5q6_collision.h"
+#include "planer_utils/double_joint_collision_checker.h"
 #include <iostream>
 #include <math.h>
 
-const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
--0.397855401039,-2.90307354927,
-2.12894010544,-2.90307354927,
-1.92475450039,-1.43123674393,
-0.77621114254,-1.39720571041,
-0.350824713707,-1.00585031509,
-0.401871085167,-0.571956157684,
-0.810242056847,0.414940297604,
-1.34622907639,0.942419290543,
-2.11192464828,1.01898884773,
-2.12894010544,2.8906891346,
--0.814733862877,2.8906891346,
--1.22310483456,2.27813267708,
--2.21850919724,2.29514837265,
--2.22701668739,-1.32063627243,
--0.814733862877,-1.73751521111,
--0.423378348351,-2.09483933449,
-};
-
-
-    VelmaQ5Q6CollisionChecker::VelmaQ5Q6CollisionChecker(int q5_idx, int q6_idx, double d0, bool inverted) :
-        q5_idx_(q5_idx),
-        q6_idx_(q6_idx),
+    DoubleJointCC::DoubleJointCC(double d0, const std::vector<double >& polygon) :
         d0_(d0)
     {
-        int lines_count = sizeof(polygon_q5q6_)/sizeof(double)/2;
-        double inv = 1.0;
-        if (inverted) {
-            inv = -1.0;
-        }
+        int lines_count = polygon.size() / 2;
 
         for (int line_idx = 0; line_idx < lines_count; line_idx++) {
             int idxA = line_idx * 2;
             int idxB = ((line_idx + 1) % lines_count) * 2;
             Line l;
             l.a.resize(2);
-            l.a(0) = inv * polygon_q5q6_[idxA];
-            l.a(1) = inv * polygon_q5q6_[idxA + 1];
+            l.a(0) = polygon[idxA];
+            l.a(1) = polygon[idxA + 1];
             l.b.resize(2);
-            l.b(0) = inv * polygon_q5q6_[idxB];
-            l.b(1) = inv * polygon_q5q6_[idxB + 1];
+            l.b(0) = polygon[idxB];
+            l.b(1) = polygon[idxB + 1];
             l.n.resize(2);
             l.n(0) = l.a(1) - l.b(1);
             l.n(1) = l.b(0) - l.a(0);
@@ -102,7 +76,7 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
             }
             else {
                 // concave
-                Eigen::VectorXd n(lines_[l1_idx].n + lines_[l2_idx].n);
+                DoubleJointCC::Joints n(lines_[l1_idx].n + lines_[l2_idx].n);
                 n.normalize();
                 PointAngle pa;
 
@@ -123,22 +97,18 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
         }
     }
 
-    VelmaQ5Q6CollisionChecker::~VelmaQ5Q6CollisionChecker() {
+    DoubleJointCC::~DoubleJointCC() {
     }
 
-    bool VelmaQ5Q6CollisionChecker::inCollision(const Eigen::VectorXd &q) const {
-        Eigen::VectorXd p(2);
-        p(0) = q(q5_idx_);
-        p(1) = q(q6_idx_);
-        bool collision = !point_inside_polygon(p);
-        return collision;
+    bool DoubleJointCC::inCollision(const DoubleJointCC::Joints &q) const {
+        return !point_inside_polygon(q);
     }
 
-    bool VelmaQ5Q6CollisionChecker::point_inside_polygon(const Eigen::VectorXd &p) const {
+    bool DoubleJointCC::point_inside_polygon(const DoubleJointCC::Joints &p) const {
         bool inside = false;
         for (int line_idx = 0; line_idx < lines_.size(); line_idx++) {
-            const Eigen::VectorXd &a = lines_[line_idx].a;
-            const Eigen::VectorXd &b = lines_[line_idx].b;
+            const DoubleJointCC::Joints &a = lines_[line_idx].a;
+            const DoubleJointCC::Joints &b = lines_[line_idx].b;
             if (p(1) > a(1) || p(1) > b(1)) {
                 if (p(1) <= a(1) || p(1) <= b(1)) {
                     if (p(0) <= a(0) || p(0) <= b(0)) {
@@ -157,16 +127,13 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
         return inside;
     }
 
-    bool VelmaQ5Q6CollisionChecker::getMinDistance(const Eigen::VectorXd &q, Eigen::VectorXd &min_v, double &min_dist, int &min_idx, int &min_type) const {
+    bool DoubleJointCC::getMinDistance(const DoubleJointCC::Joints &q, DoubleJointCC::Joints &min_v, double &min_dist, int &min_idx, int &min_type) const {
             bool found = false;
             min_dist = d0_;
-            Eigen::VectorXd p(2);
-            p(0) = q(q5_idx_);
-            p(1) = q(q6_idx_);
 
             for (int line_idx = 0; line_idx < lines_.size(); line_idx++) {
-                if (lines_[line_idx].ab.dot(p) >= lines_[line_idx].da && lines_[line_idx].ab.dot(p) <= lines_[line_idx].db) {
-                    double dist = lines_[line_idx].n.dot(p) - lines_[line_idx].dn;
+                if (lines_[line_idx].ab.dot(q) >= lines_[line_idx].da && lines_[line_idx].ab.dot(q) <= lines_[line_idx].db) {
+                    double dist = lines_[line_idx].n.dot(q) - lines_[line_idx].dn;
                     if (dist < min_dist && dist > 0) {
                         min_dist = dist;
                         min_v = lines_[line_idx].n * dist;
@@ -178,8 +145,8 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
             }
 
             for (int pt_idx = 0; pt_idx < convex_points_.size(); pt_idx++) {
-                if (convex_points_[pt_idx].n1.dot(p) >= convex_points_[pt_idx].dn1 && convex_points_[pt_idx].n2.dot(p) >= convex_points_[pt_idx].dn2) {
-                    Eigen::VectorXd v(p - convex_points_[pt_idx].p);
+                if (convex_points_[pt_idx].n1.dot(q) >= convex_points_[pt_idx].dn1 && convex_points_[pt_idx].n2.dot(q) >= convex_points_[pt_idx].dn2) {
+                    DoubleJointCC::Joints v(q - convex_points_[pt_idx].p);
                     double dist = v.norm();
                     if (dist < min_dist) {
                         min_dist = dist;
@@ -192,8 +159,8 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
             }
 
             for (int pt_idx = 0; pt_idx < concave_points_.size(); pt_idx++) {
-                if (concave_points_[pt_idx].n1.dot(p) >= concave_points_[pt_idx].dn1 && concave_points_[pt_idx].n2.dot(p) >= concave_points_[pt_idx].dn2) {
-                    Eigen::VectorXd v(p - concave_points_[pt_idx].p);
+                if (concave_points_[pt_idx].n1.dot(q) >= concave_points_[pt_idx].dn1 && concave_points_[pt_idx].n2.dot(q) >= concave_points_[pt_idx].dn2) {
+                    DoubleJointCC::Joints v(q - concave_points_[pt_idx].p);
                     double dist = 2.0 * d0_ - v.norm();
                     if (dist < min_dist && dist > 0) {
                         min_dist = dist;
@@ -208,7 +175,7 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
             return found;
     }
 
-    int VelmaQ5Q6CollisionChecker::visualizeBorder(MarkerPublisher *markers_pub, int m_id) const {
+    int DoubleJointCC::visualizeBorder(MarkerPublisher *markers_pub, int m_id) const {
                 // draw border lines
                 for (int line_idx = 0; line_idx < lines_.size(); line_idx++) {
                     KDL::Vector n(lines_[line_idx].n(0), lines_[line_idx].n(1), 0);
@@ -230,7 +197,7 @@ const double VelmaQ5Q6CollisionChecker::polygon_q5q6_[] = {
                 return m_id;
     }
 
-    int VelmaQ5Q6CollisionChecker::visualizeRegion(MarkerPublisher *markers_pub, int m_id, int min_idx, int min_type) const {
+    int DoubleJointCC::visualizeRegion(MarkerPublisher *markers_pub, int m_id, int min_idx, int min_type) const {
                 // draw enlarged region (closest to the point)
                 if (min_type == 0) {
                     KDL::Vector lineA(lines_[min_idx].a(0), lines_[min_idx].a(1), 0);

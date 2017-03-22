@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Robot Control and Pattern Recognition Group,
+// Copyright (c) 2015-2017, Robot Control and Pattern Recognition Group,
 // Institute of Control and Computation Engineering
 // Warsaw University of Technology
 //
@@ -29,38 +29,38 @@
 // Author: Dawid Seredynski
 //
 
-#ifndef VELMA_Q5Q6_COLLISION_H__
-#define VELMA_Q5Q6_COLLISION_H__
+#ifndef DOUBLE_JOINT_COLLISION_CHECKER_H__
+#define DOUBLE_JOINT_COLLISION_CHECKER_H__
 
 #include "Eigen/Dense"
 
 #include "planer_utils/marker_publisher.h"
 
-class VelmaQ5Q6CollisionChecker {
+class DoubleJointCC {
 public:
-    VelmaQ5Q6CollisionChecker(int q5_idx, int q6_idx, double d0, bool inverted);
-    ~VelmaQ5Q6CollisionChecker();
-    bool inCollision(const Eigen::VectorXd &q) const;
-    bool getMinDistance(const Eigen::VectorXd &q, Eigen::VectorXd &min_v, double &min_dist, int &min_idx, int &min_type) const;
+
+    typedef Eigen::Matrix<double, 2, 1 > Joints;
+
+    DoubleJointCC(double d0, const std::vector<double >& polygon);
+    ~DoubleJointCC();
+    bool inCollision(const Joints &q) const;
+    bool getMinDistance(const Joints &q, Joints &min_v, double &min_dist, int &min_idx, int &min_type) const;
     int visualizeBorder(MarkerPublisher *markers_pub, int m_id) const;
     int visualizeRegion(MarkerPublisher *markers_pub, int m_id, int min_idx, int min_type) const;
 protected:
-    bool point_inside_polygon(const Eigen::VectorXd &p) const;
+    bool point_inside_polygon(const Joints &p) const;
 
-    int q5_idx_, q6_idx_;
     double d0_;
-
-    static const double polygon_q5q6_[];
 
     class Line {
     public:
-        Eigen::VectorXd a, b, n, ab;
+        Joints a, b, n, ab;
         double dn, da, db;
     };
 
     class PointAngle {
     public:
-        Eigen::VectorXd p, n1, n2;
+        Joints p, n1, n2;
         double dn1, dn2;
     };
 
@@ -70,5 +70,5 @@ protected:
 
 };
 
-#endif  // VELMA_Q5Q6_COLLISION_H__
+#endif  // DOUBLE_JOINT_COLLISION_CHECKER_H__
 

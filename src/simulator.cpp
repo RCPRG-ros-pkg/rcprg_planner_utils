@@ -126,16 +126,39 @@
             std::cout << "ERROR: DynamicsSimulatorHandPose works for 3 or 6 dimensions" << std::endl;
         }
 
+        std::vector<double > wcc_polygon({
+-0.397855401039,-2.90307354927,
+2.12894010544,-2.90307354927,
+1.92475450039,-1.43123674393,
+0.77621114254,-1.39720571041,
+0.350824713707,-1.00585031509,
+0.401871085167,-0.571956157684,
+0.810242056847,0.414940297604,
+1.34622907639,0.942419290543,
+2.11192464828,1.01898884773,
+2.12894010544,2.8906891346,
+-0.814733862877,2.8906891346,
+-1.22310483456,2.27813267708,
+-2.21850919724,2.29514837265,
+-2.22701668739,-1.32063627243,
+-0.814733862877,-1.73751521111,
+-0.423378348351,-2.09483933449,
+});
+        std::vector<double > wcc_polygon_inv;
+        for (int i = 0; i < wcc_polygon.size(); ++i) {
+            wcc_polygon_inv.push_back(-1.0 * wcc_polygon[i]);
+        }
+
         std::set<int > jlc_excluded_q_idx;
         if (wcc_r_q5_idx != -1 && wcc_r_q6_idx != -1) {
             jlc_excluded_q_idx.insert(wcc_r_q5_idx);
             jlc_excluded_q_idx.insert(wcc_r_q6_idx);
-            task_WCCr_.reset( new Task_WCC(ndof, wcc_r_q5_idx, wcc_r_q6_idx, false) );
+            task_WCCr_.reset( new Task_WCC(ndof, wcc_r_q5_idx, wcc_r_q6_idx, wcc_polygon) );
         }
         if (wcc_l_q5_idx != -1 && wcc_l_q6_idx != -1) {
             jlc_excluded_q_idx.insert(wcc_l_q5_idx);
             jlc_excluded_q_idx.insert(wcc_l_q6_idx);
-            task_WCCl_.reset( new Task_WCC(ndof, wcc_l_q5_idx, wcc_l_q6_idx, true) );
+            task_WCCl_.reset( new Task_WCC(ndof, wcc_l_q5_idx, wcc_l_q6_idx, wcc_polygon_inv) );
         }
         task_JLC_.reset( new Task_JLC(lower_limit, upper_limit, limit_range, max_trq, jlc_excluded_q_idx) );
 
@@ -186,7 +209,7 @@
                 // wrist collision constraint
                 //
                 if (task_WCCr_ != NULL) {
-                    task_WCCr_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCr_, N_WCCr_);
+                    task_WCCr_->compute(q_, dq_, dyn_model_->getInvM(), torque_WCCr_, N_WCCr_);
                     //task_WCCr_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCr_, N_WCCr_, markers_pub, &m_id);   // visual debug
                     if (task_WCCr_->inCollision()) {
                         //std::cout << "collision task_WCCr " << q_(6) << " " << q_(7) << std::endl;
@@ -195,7 +218,7 @@
                 }
 
                 if (task_WCCl_ != NULL) {
-                    task_WCCl_->compute(q_, dq_, dyn_model_->getM(), dyn_model_->getInvM(), torque_WCCl_, N_WCCl_);
+                    task_WCCl_->compute(q_, dq_, dyn_model_->getInvM(), torque_WCCl_, N_WCCl_);
                     if (task_WCCl_->inCollision()) {
                         //std::cout << "collision task_WCCl" << std::endl;
                         in_collision_ = true;

@@ -37,15 +37,15 @@
 
 #include "planer_utils/marker_publisher.h"
 #include "planer_utils/activation_function.h"
-#include "planer_utils/velma_q5q6_collision.h"
+#include "planer_utils/double_joint_collision_checker.h"
 
 class Task_WCC {
 public:
-    Task_WCC(int ndof, int q5_idx, int q6_idx, bool inverted=false);
+    Task_WCC(int ndof, int q5_idx, int q6_idx, const std::vector<double >& polygon);
 
     ~Task_WCC();
 
-    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub=NULL, int *m_id=NULL);
+    void compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub=NULL, int *m_id=NULL);
 
     bool inCollision() const;
 
@@ -65,7 +65,7 @@ protected:
     double activation_;
     bool in_collision_;
 
-    VelmaQ5Q6CollisionChecker cc_;
+    DoubleJointCC cc_;
 
     ActivationFunction af_;
 };

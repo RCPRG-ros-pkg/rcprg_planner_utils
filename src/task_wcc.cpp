@@ -33,14 +33,14 @@
 #include <iostream>
 #include <math.h>
 
-    Task_WCC::Task_WCC(int ndof, int q5_idx, int q6_idx, bool inverted) :
+    Task_WCC::Task_WCC(int ndof, int q5_idx, int q6_idx, const std::vector<double >& polygon) :
         ndof_(ndof),
         q5_idx_(q5_idx),
         q6_idx_(q6_idx),
         d0_(10.0/180.0*3.1415),
         in_collision_(false),
         af_(0.2 * d0_, 4.0 / d0_),
-        cc_(q5_idx, q6_idx, d0_, inverted),
+        cc_(d0_, polygon),
         activation_(0.0)
     {
     }
@@ -48,17 +48,19 @@
     Task_WCC::~Task_WCC() {
     }
 
-    void Task_WCC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &I, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub, int *m_id) {
+    void Task_WCC::compute(const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::MatrixXd &invI, Eigen::VectorXd &torque, Eigen::MatrixXd &N, MarkerPublisher *markers_pub, int *m_id) {
 
             torque.setZero();
             N.setIdentity();
+
+            DoubleJointCC::Joints q2(q(q5_idx_), q(q6_idx_));
 
             if (markers_pub != NULL) {
                 *m_id = cc_.visualizeBorder(markers_pub, *m_id);
                 *m_id = markers_pub->addSinglePointMarker(*m_id, KDL::Vector(q(q5_idx_), q(q6_idx_), 0), 0, 1, 0, 1, 0.03, "world");
             }
 
-            if (cc_.inCollision(q)) {
+            if (cc_.inCollision(q2)) {
                 in_collision_ = true;
                 return;
             }
@@ -69,9 +71,9 @@
             int min_idx;
             int min_type;
             double min_dist;
-            Eigen::VectorXd min_v(2);
+            DoubleJointCC::Joints min_v;
 
-            bool found = cc_.getMinDistance(q, min_v, min_dist, min_idx, min_type);
+            bool found = cc_.getMinDistance(q2, min_v, min_dist, min_idx, min_type);
 
             if (markers_pub != NULL) {
                 if (found) {
