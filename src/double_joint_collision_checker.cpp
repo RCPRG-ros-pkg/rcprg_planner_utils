@@ -42,13 +42,10 @@
             int idxA = line_idx * 2;
             int idxB = ((line_idx + 1) % lines_count) * 2;
             Line l;
-            l.a.resize(2);
             l.a(0) = polygon[idxA];
             l.a(1) = polygon[idxA + 1];
-            l.b.resize(2);
             l.b(0) = polygon[idxB];
             l.b(1) = polygon[idxB + 1];
-            l.n.resize(2);
             l.n(0) = l.a(1) - l.b(1);
             l.n(1) = l.b(0) - l.a(0);
             l.n.normalize();
