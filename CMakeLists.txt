@@ -40,7 +40,6 @@ add_library(planer_utils
     src/double_joint_collision_checker.cpp)
 
 target_link_libraries(planer_utils ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(planer_utils ${PROJECT_NAME}_gencpp)
 
 ### Orocos Package Exports and Install Targets ###
 
