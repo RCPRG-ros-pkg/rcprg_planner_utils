@@ -38,7 +38,7 @@
 #include <set>
 
 #include <collision_convex_model/collision_convex_model.h>
-#include "kin_model/kin_model.h"
+#include "kin_dyn_model/kin_model.h"
 #include "planer_utils/activation_function.h"
 #include "planer_utils/marker_publisher.h"
 

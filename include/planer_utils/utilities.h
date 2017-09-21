@@ -45,7 +45,7 @@
 #include "Eigen/Dense"
 
 #include <collision_convex_model/collision_convex_model.h>
-#include "kin_model/kin_model.h"
+#include "kin_dyn_model/kin_model.h"
 #include "marker_publisher.h"
 
 void publishJointState(ros::Publisher &joint_state_pub, const Eigen::VectorXd &q, const std::vector<std::string > &joint_names);

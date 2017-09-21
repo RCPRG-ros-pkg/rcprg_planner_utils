@@ -40,9 +40,9 @@
 
 #include "Eigen/Dense"
 
-#include "dyn_model/dyn_model.h"
+#include "kin_dyn_model/dyn_model.h"
 #include <collision_convex_model/collision_convex_model.h>
-#include "kin_model/kin_model.h"
+#include "kin_dyn_model/kin_model.h"
 #include "planer_utils/task_col.h"
 #include "planer_utils/task_hand.h"
 #include "planer_utils/task_jlc.h"

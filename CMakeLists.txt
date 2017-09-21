@@ -42,5 +42,16 @@ add_library(planer_utils
 target_link_libraries(planer_utils ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 ### Orocos Package Exports and Install Targets ###
+
 catkin_python_setup()
+
+install(TARGETS planer_utils
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
 
