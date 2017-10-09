@@ -55,3 +55,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
+catkin_install_python(PROGRAMS
+    src_python/pose_int_marker.py
+DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
