@@ -72,6 +72,7 @@ double rad2deg(double rad);
 double triVariateIsotropicGaussianKernel(const Eigen::Vector3d &x, const Eigen::Vector3d &mean, double sigma);
 double biVariateIsotropicGaussianKernel(const Eigen::Vector2d &x, const Eigen::Vector2d &mean, double sigma);
 double uniVariateIsotropicGaussianKernel(double x, double mean, double sigma);
+double uniVariateIsotropicGaussianKernelIntegral(double x1, double x2);
 double misesFisherKernelConstant(double sigma, int dimensions);
 double misesFisherKernel(const Eigen::Vector3d &q, const Eigen::Vector3d &mean, double sigma, double Cp);
 int vonMisesFisherSample(const Eigen::Vector3d &mean, double pdf_mean, double sigma, double Cp, Eigen::Vector3d &x);

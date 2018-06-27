@@ -12,8 +12,9 @@ find_package(OMPL REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES planer_utils
-  DEPENDS roscpp geometry_msgs visualization_msgs message_runtime Eigen3
-  collision_convex_model rcprg_ros_utils
+  CATKIN_DEPENDS roscpp geometry_msgs visualization_msgs message_runtime
+  collision_convex_model rcprg_ros_utils kin_dyn_model
+  DEPENDS Eigen3
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
