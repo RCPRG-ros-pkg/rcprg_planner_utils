@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   )
 
 find_package(Eigen3 REQUIRED)
-find_package(OMPL REQUIRED)
+find_package(ompl REQUIRED)
 
 # Export package information (replaces catkin_package() macro) 
 catkin_package(
@@ -14,7 +14,7 @@ catkin_package(
   LIBRARIES planer_utils
   CATKIN_DEPENDS roscpp geometry_msgs visualization_msgs message_runtime
   collision_convex_model rcprg_ros_utils kin_dyn_model
-  DEPENDS Eigen3
+  DEPENDS EIGEN3
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
