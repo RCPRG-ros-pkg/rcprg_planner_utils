@@ -229,7 +229,8 @@
                 // collision constraints
                 //
                 std::vector<self_collision::CollisionInfo> link_collisions;
-                self_collision::getCollisionPairs(col_model_, links_fk_, activation_dist_, link_collisions);
+                // Get collision pairs for full model, with hands
+                self_collision::getCollisionPairs(col_model_, 0, links_fk_, activation_dist_, link_collisions);
                 for (std::vector<self_collision::CollisionInfo>::const_iterator it = link_collisions.begin(); it != link_collisions.end(); it++) {
                     if ( it->dist <= 0.0 ) {
                         std::cout << "collision task_COL " << col_model_->getLinkName(it->link1_idx) << " " << col_model_->getLinkName(it->link2_idx) << std::endl;
