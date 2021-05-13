@@ -124,7 +124,7 @@
         return inside;
     }
 
-    bool DoubleJointCC::getMinDistance(const DoubleJointCC::Joints &q, DoubleJointCC::Joints &min_v, double &min_dist, int &min_idx, int &min_type) const {
+    bool DoubleJointCC::getMinDistanceIn(const DoubleJointCC::Joints &q, DoubleJointCC::Joints &min_v, double &min_dist, int &min_idx, int &min_type) const {
             bool found = false;
             min_dist = d0_;
 
@@ -163,6 +163,57 @@
                         min_dist = dist;
                         v.normalize();
                         min_v = - v * dist;
+                        found = true;
+                        min_idx = pt_idx;
+                        min_type = 2;
+                    }
+                }
+            }
+            return found;
+    }
+
+    bool DoubleJointCC::getMinDistanceOut(const DoubleJointCC::Joints &q, DoubleJointCC::Joints &min_v, double &min_dist, int &min_idx, int &min_type) const {
+            bool found = false;
+            min_dist = d0_;
+
+            for (int line_idx = 0; line_idx < lines_.size(); line_idx++) {
+                if (lines_[line_idx].ab.dot(q) >= lines_[line_idx].da && lines_[line_idx].ab.dot(q) <= lines_[line_idx].db) {
+                    double dist = lines_[line_idx].n.dot(q) - lines_[line_idx].dn;
+                    dist *= -1.0;
+                    if (dist < min_dist && dist > 0) {
+                        min_dist = dist;
+                        min_v = lines_[line_idx].n * dist;
+                        found = true;
+                        min_idx = line_idx;
+                        min_type = 0;
+                    }
+                }
+            }
+
+            for (int pt_idx = 0; pt_idx < convex_points_.size(); pt_idx++) {
+                if (convex_points_[pt_idx].n1.dot(q) <= convex_points_[pt_idx].dn1 && convex_points_[pt_idx].n2.dot(q) <= convex_points_[pt_idx].dn2) {
+                    DoubleJointCC::Joints v(q - convex_points_[pt_idx].p);
+                    double dist = v.norm();
+                    if (dist < min_dist)
+                    {
+                        min_dist = dist;
+                        min_v = -v;
+                        found = true;
+                        min_idx = pt_idx;
+                        min_type = 1;
+                    }
+                }
+            }
+
+            for (int pt_idx = 0; pt_idx < concave_points_.size(); pt_idx++) {
+                if (concave_points_[pt_idx].n1.dot(q) >= concave_points_[pt_idx].dn1 && concave_points_[pt_idx].n2.dot(q) >= concave_points_[pt_idx].dn2) {
+                    DoubleJointCC::Joints v(q - concave_points_[pt_idx].p);
+                    double dist = v.norm() - 2.0 * d0_;
+                    if (dist < min_dist && dist > 0)
+                    {
+                        min_dist = dist;
+                        v.normalize();
+                        min_v = -v * dist;
                         found = true;
                         min_idx = pt_idx;
                         min_type = 2;

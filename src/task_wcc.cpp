@@ -73,7 +73,7 @@
             double min_dist;
             DoubleJointCC::Joints min_v;
 
-            bool found = cc_.getMinDistance(q2, min_v, min_dist, min_idx, min_type);
+            bool found = cc_.getMinDistanceIn(q2, min_v, min_dist, min_idx, min_type);
 
             if (markers_pub != NULL) {
                 if (found) {

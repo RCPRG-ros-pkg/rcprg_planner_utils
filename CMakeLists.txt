@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen3 REQUIRED)
 find_package(ompl REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(orocos_kdl REQUIRED)
 
 # Export package information (replaces catkin_package() macro) 
 catkin_package(
@@ -14,12 +16,12 @@ catkin_package(
   LIBRARIES planer_utils
   CATKIN_DEPENDS roscpp geometry_msgs visualization_msgs message_runtime
   collision_convex_model rcprg_ros_utils kin_dyn_model
-  DEPENDS EIGEN3
+  DEPENDS EIGEN3 orocos_kdl
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-link_directories(${OMPL_LIBRARY_DIRS})
+link_directories(${orocos_kdl_LIBRARY_DIRS} ${OMPL_LIBRARY_DIRS})
 
 include_directories(${catkin_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS} ${OMPL_INCLUDE_DIRS})
 
@@ -40,6 +42,14 @@ add_library(planer_utils
     src/double_joint_collision_checker.cpp)
 
 target_link_libraries(planer_utils ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+
+add_executable(double_joint_test
+  src/double_joint_test.cpp
+  src/double_joint_collision_checker.cpp)
+target_link_libraries(double_joint_test
+  ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES} ${OpenCV_LIBS})
+
 
 ### Orocos Package Exports and Install Targets ###
 
