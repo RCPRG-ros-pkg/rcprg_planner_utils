@@ -46,6 +46,7 @@ public:
     bool inCollision(const Joints &q) const;
     bool getMinDistanceIn(const Joints &q, Joints &min_v, double &min_dist, int &min_idx, int &min_type) const;
     bool getMinDistanceOut(const Joints &q, Joints &min_v, double &min_dist, int &min_idx, int &min_type) const;
+    double getD0() const;
     int visualizeBorder(MarkerPublisher *markers_pub, int m_id) const;
     int visualizeRegion(MarkerPublisher *markers_pub, int m_id, int min_idx, int min_type) const;
 protected:

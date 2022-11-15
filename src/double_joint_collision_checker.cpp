@@ -223,6 +223,10 @@
             return found;
     }
 
+    double DoubleJointCC::getD0() const {
+        return d0_;
+    }
+
     int DoubleJointCC::visualizeBorder(MarkerPublisher *markers_pub, int m_id) const {
                 // draw border lines
                 for (int line_idx = 0; line_idx < lines_.size(); line_idx++) {
