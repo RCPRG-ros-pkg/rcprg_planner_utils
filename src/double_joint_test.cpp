@@ -3,9 +3,9 @@
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
+//#include <opencv2/core.hpp>
+//#include <opencv2/imgproc.hpp>
+//#include <opencv2/highgui.hpp>
 
 #include "planer_utils/activation_function.h"
 #include "planer_utils/double_joint_collision_checker.h"

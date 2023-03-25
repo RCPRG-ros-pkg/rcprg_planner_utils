@@ -7,7 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen3 REQUIRED)
 find_package(ompl REQUIRED)
-find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED)
 find_package(orocos_kdl REQUIRED)
 
 # Export package information (replaces catkin_package() macro) 
@@ -44,11 +44,11 @@ add_library(planer_utils
 target_link_libraries(planer_utils ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 
-add_executable(double_joint_test
-  src/double_joint_test.cpp
-  src/double_joint_collision_checker.cpp)
-target_link_libraries(double_joint_test
-  ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES} ${OpenCV_LIBS})
+#add_executable(double_joint_test
+#  src/double_joint_test.cpp
+#  src/double_joint_collision_checker.cpp)
+#target_link_libraries(double_joint_test
+#  ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES}) # ${OpenCV_LIBS})
 
 
 ### Orocos Package Exports and Install Targets ###
